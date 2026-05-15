@@ -1,0 +1,37 @@
+{
+  "timeSeries": [
+    {
+      "metric": {
+        "type": "aiplatform.googleapis.com/publisher/online_serving/token_count",
+        "labels": { "model_id": "gemini-1.5-pro-multi", "request_type": "input" }
+      },
+      "resource": {
+        "type": "aiplatform.googleapis.com/PublisherModel",
+        "labels": { "project_id": "gemini-multi-proj" }
+      },
+      "points": [
+        {
+          "interval": { "startTime": "2024-02-01T00:00:00Z", "endTime": "2024-02-01T01:00:00Z" },
+          "value": { "int64Value": "240" }
+        }
+      ]
+    },
+    {
+      "metric": {
+        "type": "aiplatform.googleapis.com/publisher/online_serving/token_count",
+        "labels": { "model_id": "gemini-1.5-flash-multi", "request_type": "input" }
+      },
+      "resource": {
+        "type": "aiplatform.googleapis.com/PublisherModel",
+        "labels": { "project_id": "gemini-multi-proj" }
+      },
+      "points": [
+        {
+          "interval": { "startTime": "2024-02-01T00:00:00Z", "endTime": "2024-02-01T01:00:00Z" },
+          "value": { "int64Value": "60" }
+        }
+      ]
+    }
+  ],
+  "nextPageToken": null
+}

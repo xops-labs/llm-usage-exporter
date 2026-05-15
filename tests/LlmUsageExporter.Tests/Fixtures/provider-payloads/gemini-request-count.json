@@ -1,0 +1,21 @@
+{
+  "timeSeries": [
+    {
+      "metric": {
+        "type": "aiplatform.googleapis.com/publisher/online_serving/request_count",
+        "labels": { "model_id": "gemini-fixture" }
+      },
+      "resource": {
+        "type": "aiplatform.googleapis.com/PublisherModel",
+        "labels": { "project_id": "gemini-fixture-proj" }
+      },
+      "points": [
+        {
+          "interval": { "startTime": "2024-01-01T00:00:00Z", "endTime": "2024-01-01T01:00:00Z" },
+          "value": { "int64Value": "5" }
+        }
+      ]
+    }
+  ],
+  "nextPageToken": null
+}

@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LlmUsageExporter.Api/LlmUsageExporter.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LlmUsageExporter.Tests/LlmUsageExporter.Tests.csproj" />
+  </Folder>
+</Solution>

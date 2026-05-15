@@ -1,0 +1,84 @@
+# Normalize line endings across platforms and mark binary files explicitly.
+# Docs: https://git-scm.com/docs/gitattributes
+
+# Default behavior: auto-detect text and normalize to LF in the repo.
+* text=auto eol=lf
+
+# ----------------------------------------------------------------------
+# Source code (force LF)
+# ----------------------------------------------------------------------
+*.cs        text eol=lf diff=csharp
+*.csx       text eol=lf
+*.vb        text eol=lf
+*.fs        text eol=lf
+*.fsx       text eol=lf
+
+# Project / build files
+*.csproj    text eol=lf
+*.fsproj    text eol=lf
+*.vbproj    text eol=lf
+*.proj      text eol=lf
+*.props     text eol=lf
+*.targets   text eol=lf
+*.slnx      text eol=lf
+*.sln       text eol=crlf
+*.ruleset   text eol=lf
+*.nuspec    text eol=lf
+*.config    text eol=lf
+*.editorconfig text eol=lf
+
+# Web / data
+*.json      text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.toml      text eol=lf
+*.xml       text eol=lf
+*.html      text eol=lf
+*.css       text eol=lf
+*.js        text eol=lf
+*.ts        text eol=lf
+
+# Markdown and docs — keep LF, preserve trailing-whitespace line breaks
+*.md        text eol=lf
+*.txt       text eol=lf
+
+# Shell scripts must be LF
+*.sh        text eol=lf
+*.bash      text eol=lf
+Dockerfile  text eol=lf
+Dockerfile.* text eol=lf
+*.dockerignore text eol=lf
+
+# Windows-native scripts must be CRLF
+*.ps1       text eol=crlf
+*.psm1      text eol=crlf
+*.psd1      text eol=crlf
+*.cmd       text eol=crlf
+*.bat       text eol=crlf
+
+# ----------------------------------------------------------------------
+# Binary files (do not diff, do not modify)
+# ----------------------------------------------------------------------
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.svg       text eol=lf
+*.pdf       binary
+*.zip       binary
+*.tar       binary
+*.gz        binary
+*.7z        binary
+*.dll       binary
+*.exe       binary
+*.pdb       binary
+*.snk       binary
+*.nupkg     binary
+*.lock      text eol=lf
+
+# ----------------------------------------------------------------------
+# Linguist hints — keep generated / vendored content out of language stats
+# ----------------------------------------------------------------------
+dashboards/*.json linguist-generated=true
+deploy/*.yml      linguist-detectable=true

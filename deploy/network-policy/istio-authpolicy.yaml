@@ -1,0 +1,108 @@
+# Istio AuthorizationPolicy for llm-usage-exporter
+#
+# Restricts access to /metrics, /health, /focus.csv, and /focus.json to:
+#   - Prometheus (identified by its ServiceAccount)
+#   - Internal health-check callers (e.g., load-balancer probe)
+#
+# Apply this after injecting the Istio sidecar into the exporter pod.
+# Requires Istio with mTLS in STRICT mode (PeerAuthentication below).
+#
+# Apply:
+#   kubectl apply -f istio-authpolicy.yaml --namespace llm-monitoring
+
+# ── 1. Enforce mTLS in STRICT mode for the exporter namespace ──────────────
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: llm-usage-exporter-strict-mtls
+  namespace: llm-monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: llm-usage-exporter
+  mtls:
+    mode: STRICT
+
+---
+# ── 2. Deny all traffic to the exporter by default ─────────────────────────
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: llm-usage-exporter-deny-all
+  namespace: llm-monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: llm-usage-exporter
+  action: DENY
+  rules:
+    - {}   # match all requests — overridden by the ALLOW policy below
+
+---
+# ── 3. Allow Prometheus to scrape /metrics ──────────────────────────────────
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: llm-usage-exporter-allow-prometheus
+  namespace: llm-monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: llm-usage-exporter
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              # Replace with the actual ServiceAccount identity of your Prometheus pod.
+              # Format: cluster.local/ns/<namespace>/sa/<serviceaccount>
+              - "cluster.local/ns/monitoring/sa/prometheus"
+      to:
+        - operation:
+            methods: ["GET"]
+            paths: ["/metrics", "/metrics/*"]
+
+---
+# ── 4. Allow health probes from the kubelet and load balancer ───────────────
+# The kubelet does not carry an mTLS identity; allow /health from any source.
+# /health does not expose credential or cost data.
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: llm-usage-exporter-allow-health
+  namespace: llm-monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: llm-usage-exporter
+  action: ALLOW
+  rules:
+    - to:
+        - operation:
+            methods: ["GET"]
+            paths: ["/health"]
+
+---
+# ── 5. Allow FOCUS export to authorised internal consumers ──────────────────
+# Uncomment and set the correct ServiceAccount if you have internal consumers
+# that need the FOCUS CSV/JSON export.
+#
+# apiVersion: security.istio.io/v1beta1
+# kind: AuthorizationPolicy
+# metadata:
+#   name: llm-usage-exporter-allow-focus
+#   namespace: llm-monitoring
+# spec:
+#   selector:
+#     matchLabels:
+#       app.kubernetes.io/name: llm-usage-exporter
+#   action: ALLOW
+#   rules:
+#     - from:
+#         - source:
+#             principals:
+#               - "cluster.local/ns/finops/sa/focus-ingestion"
+#       to:
+#         - operation:
+#             methods: ["GET"]
+#             paths: ["/focus.csv", "/focus.json"]

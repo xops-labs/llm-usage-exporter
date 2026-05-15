@@ -1,0 +1,15 @@
+{
+  "ResultsByTime": [
+    {
+      "TimePeriod": { "Start": "2024-01-01", "End": "2024-01-02" },
+      "Groups": [
+        {
+          "Keys": ["USE1-Tokens-Anthropic-Claude-Fixture-input"],
+          "Metrics": {
+            "UnblendedCost": { "Amount": "1.23", "Unit": "USD" }
+          }
+        }
+      ]
+    }
+  ]
+}

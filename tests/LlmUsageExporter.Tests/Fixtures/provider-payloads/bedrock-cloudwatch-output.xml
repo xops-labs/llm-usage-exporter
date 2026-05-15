@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<GetMetricDataResponse xmlns="http://monitoring.amazonaws.com/doc/2010-08-01/">
+  <GetMetricDataResult>
+    <MetricDataResults>
+      <member>
+        <Id>m2</Id>
+        <Label>anthropic.claude-fixture-v1:0</Label>
+        <Timestamps>
+          <member>2024-01-01T00:00:00Z</member>
+        </Timestamps>
+        <Values>
+          <member>80</member>
+        </Values>
+        <StatusCode>Complete</StatusCode>
+      </member>
+    </MetricDataResults>
+  </GetMetricDataResult>
+  <ResponseMetadata><RequestId>req-output</RequestId></ResponseMetadata>
+</GetMetricDataResponse>

@@ -1,0 +1,80 @@
+name: Feature request
+description: Propose a new feature, metric, provider, or enhancement
+title: "[Feature]: "
+labels: ["feature", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing an idea. For larger or breaking changes, please consider starting a thread in [Discussions](../discussions) first so the community can shape the direction before scope is locked.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What pain are you trying to solve? Who feels it? Be concrete.
+      placeholder: "Our FinOps team can't break OpenAI spend down by deployment environment because the exporter only labels by project_id."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the feature, metric, label, or behavior you want. Include example metric output or config if relevant.
+      placeholder: |
+        Add an optional `EXPORTER_EXTRA_LABELS` env var that injects static labels onto every emitted metric, e.g. `env=prod,team=platform`.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds have you tried? Why aren't they good enough?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Rough sizing helps triage.
+      options:
+        - Small (config flag, new label, doc fix)
+        - Medium (new metric, new endpoint, refactor)
+        - Large (new provider, breaking change, new subsystem)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider area
+      multiple: true
+      options:
+        - OpenAI
+        - Azure OpenAI
+        - Anthropic Claude
+        - Google Gemini
+        - AWS Bedrock
+        - Exporter core / metrics shape
+        - Dashboards
+        - Helm / deployment
+        - Docs
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How will we know this is done? Bulleted, testable.
+      placeholder: |
+        - [ ] New env var documented in README
+        - [ ] Labels appear on every counter and gauge
+        - [ ] Unit test covers parse failure on malformed input
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Are you willing to contribute?
+      options:
+        - label: I'd be willing to open a PR for this with guidance.
+        - label: I'd like to discuss the design before any code is written.

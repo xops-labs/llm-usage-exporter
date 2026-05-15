@@ -1,0 +1,214 @@
+# OpenTelemetry Collector config for llm-usage-exporter.
+#
+# Receives OTLP metrics + traces from the exporter and forwards them to one or
+# more downstream backends. Pick the exporter(s) that match your stack and remove
+# the rest from the `service.pipelines` blocks at the bottom.
+
+file_format: "0.3"
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+        # The exporter does not currently send authn headers. If you put the
+        # collector behind a network boundary, terminate auth there.
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # 1. Batch — recommended for any production deployment.
+  batch:
+    timeout: 10s
+    send_batch_size: 8192
+
+  # 2. Attribute injection — adds deployment-level labels every signal should carry.
+  #    Override the values for each cluster/region/env.
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: production
+        action: upsert
+      - key: deployment.cluster
+        value: REPLACE_WITH_CLUSTER_NAME
+        action: upsert
+      - key: deployment.region
+        value: REPLACE_WITH_REGION
+        action: upsert
+
+  # 3. Cumulative-to-delta conversion (optional, contrib-only processor).
+  #    The exporter emits llm.usage.* counters with CUMULATIVE temporality by default —
+  #    values accumulate from startup and are never reset between export intervals.
+  #    Leave this block disabled for Prometheus remote write, Grafana Mimir,
+  #    VictoriaMetrics, AMP, and Grafana Cloud — those backends accept cumulative
+  #    counters and compute rates internally.
+  #    Enable it only for delta-preferring backends: Datadog, New Relic (OTLP intake),
+  #    or any backend that reports "counter reset" warnings on cumulative data.
+  #    Requires the contrib collector build (otel/opentelemetry-collector-contrib).
+  cumulativetodelta:
+    include:
+      match_type: regexp
+      metric_names:
+        - llm\..*
+
+  # 4. Tail sampling — keep all error-bearing or slow traces; sample the rest.
+  #    Disable this block if you want every trace exported.
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 50000
+    policies:
+      - name: keep-errors
+        type: status_code
+        status_code: { status_codes: [ERROR] }
+      - name: keep-slow
+        type: latency
+        latency: { threshold_ms: 1000 }
+      - name: sample-rest
+        type: probabilistic
+        probabilistic: { sampling_percentage: 10 }
+
+  # ── Cardinality-reduction processors ──────────────────────────────────────
+  # The blocks below are optional. Enable the ones that match your cardinality
+  # budget.  See docs/cardinality.md for sizing guidance and the formula that
+  # determines how many series each configuration produces.
+  #
+  # All processors here require the contrib collector build:
+  #   docker pull otel/opentelemetry-collector-contrib
+  #
+  # Wire chosen processors into service.pipelines.metrics.processors (below).
+
+  # 5. Drop entire metric families you do not need in a given pipeline.
+  #
+  #    Example: send model-level detail to Grafana Cloud but suppress anomaly
+  #    scores there (keep them in the Prometheus scrape via /metrics instead).
+  #
+  #    Uncomment and adjust the list; each string is an OTTL match expression.
+  #filter/llm_drop_families:
+  #  metrics:
+  #    metric:
+  #      - 'name == "llm.alerts.cost_anomaly_score"'
+  #      - 'name == "llm.alerts.token_anomaly_score"'
+  #      - 'name == "llm.usage.cached_input_tokens"'
+
+  # 6. Drop individual datapoints by attribute value.
+  #
+  #    Example: exclude dev/sandbox tenants and tenancy_ids from the production
+  #    TSDB, and drop series whose model resolved to "unknown" (sanitised empty).
+  #
+  #filter/llm_prod_only:
+  #  metrics:
+  #    datapoint:
+  #      - 'attributes["tenant"] == "dev"'
+  #      - 'attributes["tenancy_id"] == "proj_dev" or attributes["tenancy_id"] == "proj_sandbox"'
+  #      - 'attributes["model"] == "unknown"'
+
+  # 7. Delete an attribute dimension entirely.
+  #
+  #    Removing tenancy_id collapses all projects/workspaces into a single series
+  #    per (tenant, provider, model), reducing cardinality by a factor of I_p.
+  #    Trade-off: per-project cost attribution is lost in this pipeline.
+  #    Keep the full-fidelity pipeline alive for at least one backend if you need
+  #    per-tenancy showback data.
+  #
+  #attributes/llm_drop_tenancy_id:
+  #  actions:
+  #    - key: tenancy_id
+  #      action: delete
+
+  # 8. Model allowlist — collapse unlisted models to "other" instead of dropping.
+  #
+  #    Preserves aggregate token and cost counts while capping the model dimension
+  #    to a fixed set. Add new model IDs here when you adopt them.
+  #
+  #    Requires the contrib collector build (transform processor uses OTTL).
+  #
+  #transform/llm_model_cap:
+  #  metric_statements:
+  #    - context: datapoint
+  #      statements:
+  #        - >
+  #          set(attributes["model"], "other") where
+  #          attributes["provider"] == "openai" and not (
+  #            attributes["model"] == "gpt-4o" or
+  #            attributes["model"] == "gpt-4o-mini" or
+  #            attributes["model"] == "o1-mini"
+  #          )
+  #        - >
+  #          set(attributes["model"], "other") where
+  #          attributes["provider"] == "anthropic" and not (
+  #            attributes["model"] == "claude-3-5-sonnet-20241022" or
+  #            attributes["model"] == "claude-3-haiku-20240307"
+  #          )
+  #        - >
+  #          set(attributes["model"], "other") where
+  #          attributes["provider"] == "bedrock" and not (
+  #            attributes["model"] == "anthropic.claude-3-5-sonnet-20241022-v2:0" or
+  #            attributes["model"] == "amazon.titan-text-lite-v1"
+  #          )
+
+exporters:
+  # ── A) Console (debug) — verify the pipeline first ─────────────────────────
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+  # ── B) Prometheus Remote Write — push llm.usage.* into your TSDB ───────────
+  #     Works with Grafana Mimir, VictoriaMetrics, Cortex, AMP, Grafana Cloud.
+  prometheusremotewrite:
+    endpoint: https://prometheus.example.com/api/v1/write
+    # Auth via standard HTTP headers (Basic / Bearer) — set via headers below.
+    headers:
+      # Authorization: Bearer ${env:PROM_RW_TOKEN}
+    timeout: 30s
+    resource_to_telemetry_conversion:
+      enabled: true   # promotes resource attributes to metric labels
+    target_info:
+      enabled: true
+
+  # ── C) OTLP/HTTP — forward to a managed OTel backend ───────────────────────
+  #     Examples: Grafana Cloud, Honeycomb, Datadog (via OTel intake), New Relic.
+  otlphttp/managed:
+    endpoint: https://otlp.example-vendor.com
+    headers:
+      # api-key: ${env:OTLP_API_KEY}
+    compression: gzip
+    timeout: 30s
+
+  # ── D) Jaeger via OTLP — traces only, local install ────────────────────────
+  otlp/jaeger:
+    endpoint: jaeger-collector:4317
+    tls:
+      insecure: true   # in-cluster, no TLS — change for cross-cluster
+
+service:
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      address: 0.0.0.0:8888   # collector's own /metrics for self-monitoring
+
+  pipelines:
+    # Metrics pipeline — fan out to the console + Prometheus + managed OTLP.
+    # Keep the exporters you actually use.
+    # For delta-preferring backends (Datadog, New Relic), insert `cumulativetodelta`
+    # between `resource` and `batch`: [resource, cumulativetodelta, batch].
+    #
+    # Cardinality-reduction: uncomment processors from blocks 5–8 above and add
+    # them here — before `batch` and after `resource`.
+    #
+    #   With model allowlist + prod-only filter:
+    #     processors: [filter/llm_prod_only, transform/llm_model_cap, resource, batch]
+    #
+    #   With tenancy_id removal:
+    #     processors: [attributes/llm_drop_tenancy_id, resource, batch]
+    metrics:
+      receivers: [otlp]
+      processors: [resource, batch]
+      exporters: [debug, prometheusremotewrite, otlphttp/managed]
+
+    # Traces pipeline — sample at the tail, fan out to Jaeger + managed OTLP.
+    traces:
+      receivers: [otlp]
+      processors: [resource, tail_sampling, batch]
+      exporters: [debug, otlp/jaeger, otlphttp/managed]

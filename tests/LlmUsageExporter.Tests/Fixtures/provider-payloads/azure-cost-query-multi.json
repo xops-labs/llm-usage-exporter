@@ -1,0 +1,24 @@
+{
+  "properties": {
+    "columns": [
+      { "name": "Cost", "type": "Number" },
+      { "name": "UsageDate", "type": "Number" },
+      { "name": "ResourceId", "type": "String" },
+      { "name": "Currency", "type": "String" }
+    ],
+    "rows": [
+      [
+        7.25,
+        20240409,
+        "subscriptions/sub-multi/resourceGroups/rg-multi/providers/Microsoft.CognitiveServices/accounts/aoai-multi-a",
+        "USD"
+      ],
+      [
+        1.10,
+        20240409,
+        "subscriptions/sub-multi/resourceGroups/rg-multi/providers/Microsoft.CognitiveServices/accounts/aoai-multi-b",
+        "USD"
+      ]
+    ]
+  }
+}

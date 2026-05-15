@@ -1,0 +1,75 @@
+name: llm-usage-exporter
+
+services:
+  exporter:
+    build:
+      context: ..
+      dockerfile: src/LlmUsageExporter.Api/Dockerfile
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      # This compose stack is for local demo/preview. Demo mode is forced on
+      # so `docker compose up` is a true one-command launch — every dashboard
+      # renders immediately against the seeded 7-day backfill plus the live
+      # synthetic provider. For real-provider deployments use the Helm chart
+      # at deploy/helm/llm-usage-exporter/.
+      DEMO_MODE_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  # One-shot init: seeds Prometheus with 7 days of synthetic demo telemetry the
+  # first time the stack starts. Idempotent (skips if blocks already exist) and
+  # gated on DEMO_MODE_ENABLED=true so real-provider stacks stay untouched.
+  prometheus-init:
+    build:
+      context: ./demo-backfill
+    environment:
+      DEMO_MODE_ENABLED: "true"
+    volumes:
+      - prometheus-data:/prometheus
+    restart: "no"
+
+  prometheus:
+    image: prom/prometheus:latest
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      exporter:
+        condition: service_started
+      prometheus-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.5.0
+    environment:
+      # Default admin/admin for local development only — override in production.
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      # Disable the "set up a new datasource" splash; provisioning handles it.
+      GF_USERS_DEFAULT_THEME: dark
+    volumes:
+      # Provisioning wires the Prometheus datasource (uid DS_PROMETHEUS so the
+      # shipped dashboard's ${DS_PROMETHEUS} template variable resolves) and
+      # auto-imports every JSON file in dashboards/ as a Grafana dashboard.
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  prometheus-data:
+  grafana-data:

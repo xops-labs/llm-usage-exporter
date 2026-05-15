@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>LlmUsageExporter.Api</RootNamespace>
+    <AssemblyName>LlmUsageExporter.Api</AssemblyName>
+    <Authors>xops-labs/llm-usage-exporter contributors</Authors>
+    <Company>llm-usage-exporter Contributors</Company>
+    <Copyright>Copyright 2026 llm-usage-exporter Contributors</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/xops-labs/llm-usage-exporter</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/xops-labs/llm-usage-exporter</PackageProjectUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
+  </ItemGroup>
+
+</Project>

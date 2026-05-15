@@ -1,0 +1,88 @@
+name: Provider API drift
+description: Report an upstream provider API, auth, pagination, or response-shape change
+title: "[Provider drift]: "
+labels: ["provider-drift", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when a provider changed an API shape, auth requirement, pagination behavior, metric name, response field, or cost-reporting behavior.
+
+        Please redact all API keys, bearer tokens, tenant IDs, account IDs, request IDs, and customer identifiers before posting.
+
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider
+      options:
+        - OpenAI
+        - Azure OpenAI
+        - Anthropic Claude
+        - Google Gemini
+        - AWS Bedrock
+        - Multiple providers
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: changed_surface
+    attributes:
+      label: What changed?
+      description: Describe the upstream change. Include the endpoint/API surface, field name, metric name, auth behavior, pagination behavior, or error shape.
+      placeholder: |
+        Example: Anthropic usage report now returns `next_page_token` instead of `next_page`, causing the exporter to stop after the first page.
+    validations:
+      required: true
+
+  - type: input
+    id: upstream_doc
+    attributes:
+      label: Upstream documentation or changelog link
+      placeholder: "https://..."
+
+  - type: textarea
+    id: observed_failure
+    attributes:
+      label: Observed exporter behavior
+      description: Include logs, HTTP status, `/health`, and relevant metric symptoms. Redact secrets and identifiers.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: sanitized_payload
+    attributes:
+      label: Sanitized payload or response shape
+      description: Paste the smallest redacted JSON/XML snippet that shows the new shape, if you can share it safely.
+      render: json
+
+  - type: input
+    id: exporter_version
+    attributes:
+      label: llm-usage-exporter version
+      description: Git SHA, tag, or Docker image tag.
+      placeholder: "v0.2.0 / commit abc1234"
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Deployment mode, region, enabled provider features, and whether this is single-tenant or multi-tenant.
+      placeholder: |
+        - Deployment: Kubernetes / Docker Compose / local
+        - Region(s): us-east-1
+        - Features: OTLP enabled, FOCUS enabled, FileCheckpointStore
+        - Tenancy: single-tenant / multi-tenant
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: I searched existing issues and discussions for this provider/API change.
+          required: true
+        - label: I removed API keys, bearer tokens, tenant/customer identifiers, and sensitive payload values.
+          required: true

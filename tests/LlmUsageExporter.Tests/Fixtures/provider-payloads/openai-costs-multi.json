@@ -1,0 +1,26 @@
+{
+  "object": "page",
+  "data": [
+    {
+      "object": "bucket",
+      "start_time": 1720000000,
+      "end_time": 1720086400,
+      "results": [
+        {
+          "object": "organization.costs.result",
+          "amount": { "value": 3.25, "currency": "usd" },
+          "line_item": "gpt-4o-mini-multi",
+          "project_id": "proj_multi_a"
+        },
+        {
+          "object": "organization.costs.result",
+          "amount": { "value": 0.75, "currency": "usd" },
+          "line_item": "gpt-4o-multi",
+          "project_id": "proj_multi_b"
+        }
+      ]
+    }
+  ],
+  "has_more": false,
+  "next_page": null
+}

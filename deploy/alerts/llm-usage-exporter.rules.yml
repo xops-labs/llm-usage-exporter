@@ -1,0 +1,184 @@
+groups:
+  - name: llm-usage-exporter.health
+    interval: 1m
+    rules:
+
+      - alert: LlmUsageExporterDown
+        # The exporter target itself is unreachable. Highest-severity — no metrics until fixed.
+        expr: up{job="llm-usage-exporter"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          component: llm-usage-exporter
+        annotations:
+          summary: "llm-usage-exporter target is down ({{ $labels.instance }})"
+          description: |
+            Prometheus has not been able to scrape the llm-usage-exporter at
+            {{ $labels.instance }} for 5+ minutes. No LLM cost or usage data is
+            being recorded. Check pod status with
+            `kubectl get pods -n observability -l app.kubernetes.io/name=llm-usage-exporter`.
+          runbook_url: "https://github.com/your-org/llm-usage-exporter/blob/main/docs/failure-modes.md#prometheus-scrape-failure"
+
+      - alert: LlmUsageExporterUnhealthy
+        # /health flipped to 503 — consecutive_failures crossed the threshold (default 3).
+        # We approximate this by watching for failures across all providers in a short window.
+        expr: |
+          sum(rate(llm_exporter_poll_failure_total[10m])) by (instance)
+            >
+          sum(rate(llm_exporter_poll_success_total[10m])) by (instance)
+        for: 15m
+        labels:
+          severity: critical
+          component: llm-usage-exporter
+        annotations:
+          summary: "llm-usage-exporter has more failures than successes at {{ $labels.instance }}"
+          description: |
+            Poll failure rate exceeds success rate for 15+ minutes. Likely cause is
+            a credential rotation or an upstream API change. See docs/troubleshooting.md.
+          runbook_url: "https://github.com/your-org/llm-usage-exporter/blob/main/docs/failure-modes.md#bad-credentials"
+
+      - alert: LlmUsageExporterPollFailures
+        # One specific provider is failing repeatedly while others may be healthy.
+        expr: |
+          increase(llm_exporter_poll_failure_total[15m]) > 3
+        for: 15m
+        labels:
+          severity: warning
+          component: llm-usage-exporter
+        annotations:
+          summary: "provider={{ $labels.provider }} on tenant={{ $labels.tenant }} failing"
+          description: |
+            More than 3 polling failures in the last 15 minutes for provider
+            {{ $labels.provider }}. Check the exporter logs for the upstream error
+            response — typically a credential / auth error or a rate-limit ceiling.
+            The other providers continue to poll independently.
+          runbook_url: "https://github.com/your-org/llm-usage-exporter/blob/main/docs/failure-modes.md#provider-429--rate-limiting"
+
+      - alert: LlmUsageExporterStale
+        # The last successful poll for any provider is older than 30 min.
+        # Indicates the provider has been failing every poll for an extended period.
+        expr: |
+          time() - max by (tenant, provider, instance) (llm_exporter_last_success_timestamp) > 1800
+        for: 10m
+        labels:
+          severity: warning
+          component: llm-usage-exporter
+        annotations:
+          summary: "llm-usage-exporter data is stale for tenant={{ $labels.tenant }} provider={{ $labels.provider }}"
+          description: |
+            No successful poll has completed in the last 30 minutes for tenant
+            {{ $labels.tenant }} / provider {{ $labels.provider }}. Cost dashboards
+            and budget alerts will read flat until polls resume.
+          runbook_url: "https://github.com/your-org/llm-usage-exporter/blob/main/docs/failure-modes.md#bad-credentials"
+
+      - alert: LlmUsageExporterSlowPoll
+        # A specific provider's last poll took >30s — upstream getting slow, likely retry
+        # backoff or large response paging.
+        expr: |
+          max by (tenant, provider) (llm_exporter_last_poll_duration_seconds) > 30
+        for: 15m
+        labels:
+          severity: info
+          component: llm-usage-exporter
+        annotations:
+          summary: "Slow poll on tenant={{ $labels.tenant }} provider={{ $labels.provider }} ({{ $value | humanize }}s)"
+          description: |
+            Last poll duration exceeded 30 seconds for provider {{ $labels.provider }}.
+            Check upstream provider status and consider widening the lookback or
+            splitting model/tenancy filters.
+          runbook_url: "https://github.com/your-org/llm-usage-exporter/blob/main/docs/failure-modes.md#provider-429--rate-limiting"
+
+  - name: llm-usage-exporter.budgets
+    interval: 1m
+    rules:
+
+      - alert: LlmBudgetBurnEarly
+        # Budget is on track to be exhausted before the end of the period.
+        expr: llm_alerts_budget_burn_ratio >= 0.5
+        for: 10m
+        labels:
+          severity: info
+          component: llm-usage-exporter
+        annotations:
+          summary: "Budget {{ $labels.budget_name }} at {{ $value | humanizePercentage }}"
+          description: |
+            Budget {{ $labels.budget_name }} has consumed at least 50% of its limit before
+            the period ended. Surface this to the budget owner.
+          runbook_url: "https://github.com/your-org/llm-usage-exporter/blob/main/docs/failure-modes.md#reading-the-exporter-health-dashboard"
+
+      - alert: LlmBudgetBurnHigh
+        # 80% threshold — most teams want a heads-up here.
+        expr: llm_alerts_budget_burn_ratio >= 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: llm-usage-exporter
+        annotations:
+          summary: "Budget {{ $labels.budget_name }} at {{ $value | humanizePercentage }}"
+          description: |
+            Budget {{ $labels.budget_name }} has consumed at least 80% of its limit.
+            See llm_alerts_budget_spend_usd and llm_alerts_budget_limit_usd for the
+            absolute numbers.
+          runbook_url: "https://github.com/your-org/llm-usage-exporter/blob/main/docs/failure-modes.md#reading-the-exporter-health-dashboard"
+
+      - alert: LlmBudgetExceeded
+        # 100%+ — budget breached.
+        expr: llm_alerts_budget_burn_ratio >= 1.0
+        for: 1m
+        labels:
+          severity: critical
+          component: llm-usage-exporter
+        annotations:
+          summary: "Budget {{ $labels.budget_name }} EXCEEDED ({{ $value | humanizePercentage }})"
+          description: |
+            Budget {{ $labels.budget_name }} has been exceeded. Investigate which
+            tenant / provider / model is responsible — see the cost-and-budgets
+            Grafana dashboard.
+          runbook_url: "https://github.com/your-org/llm-usage-exporter/blob/main/docs/failure-modes.md#reading-the-exporter-health-dashboard"
+
+  - name: llm-usage-exporter.anomalies
+    interval: 1m
+    rules:
+
+      - alert: LlmCostAnomaly
+        # Cost z-score outside ±2σ — a soft heads-up.
+        expr: abs(llm_alerts_cost_anomaly_score) >= 2
+        for: 10m
+        labels:
+          severity: warning
+          component: llm-usage-exporter
+        annotations:
+          summary: "Cost anomaly tenant={{ $labels.tenant }} provider={{ $labels.provider }} model={{ $labels.model }} (z={{ $value }})"
+          description: |
+            Cost for {{ $labels.tenant }} / {{ $labels.provider }} / {{ $labels.model }}
+            is outside ±2σ of the rolling baseline. Could be intentional traffic growth
+            or a runaway prompt loop.
+          runbook_url: "https://github.com/your-org/llm-usage-exporter/blob/main/docs/failure-modes.md#matrix"
+
+      - alert: LlmCostAnomalySevere
+        # ±3σ+ — high confidence something changed.
+        expr: abs(llm_alerts_cost_anomaly_score) >= 3
+        for: 5m
+        labels:
+          severity: critical
+          component: llm-usage-exporter
+        annotations:
+          summary: "Severe cost anomaly tenant={{ $labels.tenant }} model={{ $labels.model }} (z={{ $value }})"
+          description: |
+            Cost for {{ $labels.tenant }} / {{ $labels.provider }} / {{ $labels.model }}
+            is outside ±3σ of the rolling baseline. Investigate the workload immediately.
+          runbook_url: "https://github.com/your-org/llm-usage-exporter/blob/main/docs/failure-modes.md#matrix"
+
+      - alert: LlmTokenAnomalySevere
+        # Token throughput outside ±3σ — likely cause of a forthcoming cost anomaly.
+        expr: abs(llm_alerts_token_anomaly_score) >= 3
+        for: 5m
+        labels:
+          severity: warning
+          component: llm-usage-exporter
+        annotations:
+          summary: "Severe token throughput anomaly {{ $labels.tenant }} / {{ $labels.provider }} / {{ $labels.model }} (z={{ $value }})"
+          description: |
+            Token rate for {{ $labels.tenant }} / {{ $labels.provider }} / {{ $labels.model }}
+            is outside ±3σ of the rolling baseline. Usually precedes a cost anomaly by a few minutes.
+          runbook_url: "https://github.com/your-org/llm-usage-exporter/blob/main/docs/failure-modes.md#matrix"

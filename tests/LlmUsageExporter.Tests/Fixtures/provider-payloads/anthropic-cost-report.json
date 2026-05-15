@@ -1,0 +1,18 @@
+{
+  "data": [
+    {
+      "starting_at": "2024-01-01T00:00:00Z",
+      "ending_at": "2024-01-02T00:00:00Z",
+      "results": [
+        {
+          "amount": { "amount": "1.2345", "currency": "USD" },
+          "currency": "USD",
+          "workspace_id": "wrkspc_fixture",
+          "description": "claude-fixture input tokens"
+        }
+      ]
+    }
+  ],
+  "has_more": false,
+  "next_page": null
+}

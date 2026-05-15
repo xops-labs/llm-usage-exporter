@@ -1,0 +1,63 @@
+{{- if .Values.networkPolicy.enabled -}}
+# NetworkPolicy — restricts ingress to Prometheus only; allows HTTPS egress to provider APIs.
+# Requires a CNI plugin that enforces NetworkPolicy (Calico, Cilium, Weave, etc.).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "llm-usage-exporter.fullname" . }}
+  labels:
+    {{- include "llm-usage-exporter.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "llm-usage-exporter.selectorLabels" . | nindent 6 }}
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    # Allow Prometheus to scrape /metrics.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicy.prometheusNamespace | quote }}
+          {{- if .Values.networkPolicy.prometheusSelector }}
+          podSelector:
+            matchLabels:
+              {{- toYaml .Values.networkPolicy.prometheusSelector | nindent 14 }}
+          {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.port }}
+    {{- with .Values.networkPolicy.additionalIngressRules }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+
+  egress:
+    # HTTPS to provider APIs and OTLP backend.
+    - ports:
+        - protocol: TCP
+          port: 443
+    {{- if .Values.otel.enabled }}
+    # OTLP gRPC (4317) and HTTP/protobuf (4318).
+    - ports:
+        - protocol: TCP
+          port: 4317
+        - protocol: TCP
+          port: 4318
+    {{- end }}
+    {{- with .Values.networkPolicy.additionalEgressPorts }}
+    - ports:
+        {{- range . }}
+        - protocol: TCP
+          port: {{ . }}
+        {{- end }}
+    {{- end }}
+    # DNS resolution.
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+{{- end }}

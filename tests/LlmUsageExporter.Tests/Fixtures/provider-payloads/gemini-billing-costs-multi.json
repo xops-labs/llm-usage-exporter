@@ -1,0 +1,28 @@
+{
+  "schema": {
+    "fields": [
+      { "name": "day", "type": "TIMESTAMP" },
+      { "name": "sku", "type": "STRING" },
+      { "name": "cost", "type": "FLOAT" },
+      { "name": "currency", "type": "STRING" }
+    ]
+  },
+  "rows": [
+    {
+      "f": [
+        { "v": "2024-02-01T00:00:00Z" },
+        { "v": "gemini-1.5-pro-multi input tokens" },
+        { "v": "4.20" },
+        { "v": "USD" }
+      ]
+    },
+    {
+      "f": [
+        { "v": "2024-02-01T00:00:00Z" },
+        { "v": "gemini-1.5-flash-multi input tokens" },
+        { "v": "0.55" },
+        { "v": "USD" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "value": [
+    {
+      "name": { "value": "ProcessedPromptTokens", "localizedValue": "Processed Prompt Tokens" },
+      "unit": "Count",
+      "timeseries": [
+        {
+          "metadatavalues": [
+            { "name": { "value": "ModelDeploymentName" }, "value": "gpt-4o-multi-a" }
+          ],
+          "data": [
+            { "timeStamp": "2024-04-09T00:00:00Z", "total": 250 }
+          ]
+        },
+        {
+          "metadatavalues": [
+            { "name": { "value": "ModelDeploymentName" }, "value": "gpt-4o-mini-multi-b" }
+          ],
+          "data": [
+            { "timeStamp": "2024-04-09T00:00:00Z", "total": 90 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": { "value": "GeneratedTokens", "localizedValue": "Generated Tokens" },
+      "unit": "Count",
+      "timeseries": [
+        {
+          "metadatavalues": [
+            { "name": { "value": "ModelDeploymentName" }, "value": "gpt-4o-multi-a" }
+          ],
+          "data": [
+            { "timeStamp": "2024-04-09T00:00:00Z", "total": 110 }
+          ]
+        },
+        {
+          "metadatavalues": [
+            { "name": { "value": "ModelDeploymentName" }, "value": "gpt-4o-mini-multi-b" }
+          ],
+          "data": [
+            { "timeStamp": "2024-04-09T00:00:00Z", "total": 30 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": { "value": "TokenTransaction", "localizedValue": "Token Transactions" },
+      "unit": "Count",
+      "timeseries": [
+        {
+          "metadatavalues": [
+            { "name": { "value": "ModelDeploymentName" }, "value": "gpt-4o-multi-a" }
+          ],
+          "data": [
+            { "timeStamp": "2024-04-09T00:00:00Z", "total": 12 }
+          ]
+        },
+        {
+          "metadatavalues": [
+            { "name": { "value": "ModelDeploymentName" }, "value": "gpt-4o-mini-multi-b" }
+          ],
+          "data": [
+            { "timeStamp": "2024-04-09T00:00:00Z", "total": 3 }
+          ]
+        }
+      ]
+    }
+  ]
+}

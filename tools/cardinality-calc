@@ -1,0 +1,215 @@
+#!/usr/bin/env bash
+# cardinality-calc — estimate Prometheus series count for llm-usage-exporter
+#
+# Computes the expected number of active time-series the exporter will produce
+# for a given deployment configuration.  Use this before enabling new providers,
+# tenants, or model filters so you can size your TSDB and plan any label-dropping
+# rules before cardinality causes scrape latency or OOM.
+#
+# USAGE (non-interactive)
+#   ./cardinality-calc \
+#       --tenants 5 \
+#       --provider openai:models=8:tenancy_ids=4 \
+#       --provider anthropic:models=3:tenancy_ids=2 \
+#       --provider bedrock:models=10:tenancy_ids=1 \
+#       --budgets 5
+#
+# USAGE (interactive)
+#   ./cardinality-calc
+#
+# FORMULA (applied per metric family)
+#
+#   S_usage   = 6  × T × Σ_p (M_p × I_p)   # model-dimensioned families
+#   S_cost    = 1  × T × Σ_p (I_p)          # cost_usd_total (no model label)
+#   S_health  = 5  × T × P                  # health families (no model/tenancy_id)
+#   S_budgets = 4  × B                       # budget alerts (indexed by budget_name)
+#   S_anomaly = 2  × T × Σ_p (M_p)         # anomaly scores (no tenancy_id)
+#   S_total   = S_usage + S_cost + S_health + S_budgets + S_anomaly
+#
+#   T   = tenants configured
+#   P   = active providers
+#   M_p = active models for provider p (after any OPENAI_MODELS / ANTHROPIC_MODELS filter)
+#   I_p = tenancy_ids for provider p (projects / workspaces / accounts / regions)
+#   B   = budgets configured
+#
+# METRIC FAMILIES
+#   High-cardinality (tenant, provider, model, tenancy_id) — 6 families:
+#     llm_usage_input_tokens_total
+#     llm_usage_output_tokens_total
+#     llm_usage_total_tokens_total
+#     llm_usage_cached_input_tokens_total
+#     llm_usage_requests_total
+#     llm_usage_cost_usd_by_model_total
+#   Medium (tenant, provider, tenancy_id) — 1 family:
+#     llm_usage_cost_usd_total
+#   Low (tenant, provider) — 5 families:
+#     llm_exporter_poll_{success,failure}_total
+#     llm_exporter_last_{success,failure}_timestamp
+#     llm_exporter_last_poll_duration_seconds
+#   Budget alerts (budget_name only) — 4 families × B budgets
+#   Anomaly alerts (tenant, provider, model) — 2 families
+
+set -euo pipefail
+
+# ── colour helpers ────────────────────────────────────────────────────────────
+if [[ -t 1 ]]; then
+  BOLD='\033[1m'; DIM='\033[2m'; CYAN='\033[36m'; GREEN='\033[32m'
+  YELLOW='\033[33m'; RED='\033[31m'; RESET='\033[0m'
+else
+  BOLD=''; DIM=''; CYAN=''; GREEN=''; YELLOW=''; RED=''; RESET=''
+fi
+
+print_header() { printf "\n${BOLD}${CYAN}%s${RESET}\n" "$1"; }
+print_row()    { printf "  %-42s %s\n" "$1" "$2"; }
+print_warn()   { printf "${YELLOW}  ⚠  %s${RESET}\n" "$1"; }
+print_ok()     { printf "${GREEN}  ✓  %s${RESET}\n" "$1"; }
+
+# ── argument parsing ──────────────────────────────────────────────────────────
+TENANTS=0
+BUDGETS=0
+declare -a PROVIDER_MODELS=()
+declare -a PROVIDER_TENANCY_IDS=()
+declare -a PROVIDER_NAMES=()
+
+usage() {
+  sed -n '2,35p' "$0" | sed 's/^# \?//'
+  exit 0
+}
+
+parse_provider_spec() {
+  # Parses "name:models=N:tenancy_ids=M" or "name:N:M"
+  local spec="$1"
+  local name models tenancy_ids
+  name="${spec%%:*}"
+  rest="${spec#*:}"
+  models=$(echo "$rest" | grep -oE 'models=[0-9]+' | cut -d= -f2 || true)
+  tenancy_ids=$(echo "$rest" | grep -oE 'tenancy_ids=[0-9]+' | cut -d= -f2 || true)
+  # Fallback: positional "name:M:I"
+  if [[ -z "$models" ]]; then
+    models=$(echo "$rest" | cut -d: -f1)
+  fi
+  if [[ -z "$tenancy_ids" ]]; then
+    tenancy_ids=$(echo "$rest" | cut -d: -f2)
+  fi
+  [[ "$models" =~ ^[0-9]+$ ]]      || { echo "Invalid models value in: $spec"; exit 1; }
+  [[ "$tenancy_ids" =~ ^[0-9]+$ ]] || { echo "Invalid tenancy_ids value in: $spec"; exit 1; }
+  PROVIDER_NAMES+=("$name")
+  PROVIDER_MODELS+=("$models")
+  PROVIDER_TENANCY_IDS+=("$tenancy_ids")
+}
+
+if [[ $# -eq 0 ]]; then
+  INTERACTIVE=true
+else
+  INTERACTIVE=false
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --tenants)   TENANTS="$2"; shift 2;;
+      --budgets)   BUDGETS="$2"; shift 2;;
+      --provider)  parse_provider_spec "$2"; shift 2;;
+      --help|-h)   usage;;
+      *) echo "Unknown flag: $1"; usage;;
+    esac
+  done
+fi
+
+# ── interactive mode ──────────────────────────────────────────────────────────
+ask() {
+  local prompt="$1" default="$2" result
+  printf "${BOLD}%s${RESET} [%s]: " "$prompt" "$default"
+  read -r result
+  echo "${result:-$default}"
+}
+
+if [[ "$INTERACTIVE" == true ]]; then
+  print_header "llm-usage-exporter — cardinality calculator"
+  printf "${DIM}Press Enter to accept the default shown in [brackets].${RESET}\n\n"
+
+  TENANTS=$(ask "Number of configured tenants" 1)
+  BUDGETS=$(ask "Number of configured budgets" 0)
+
+  ALL_PROVIDERS=(openai azure_openai anthropic gemini bedrock)
+  for pname in "${ALL_PROVIDERS[@]}"; do
+    enabled=$(ask "Enable $pname? (y/n)" n)
+    if [[ "$enabled" == y* ]]; then
+      m=$(ask "  Active models for $pname" 5)
+      i=$(ask "  Tenancy IDs for $pname (projects/workspaces/accounts/regions)" 1)
+      PROVIDER_NAMES+=("$pname")
+      PROVIDER_MODELS+=("$m")
+      PROVIDER_TENANCY_IDS+=("$i")
+    fi
+  done
+fi
+
+# ── validate ──────────────────────────────────────────────────────────────────
+[[ "$TENANTS" =~ ^[0-9]+$ && "$TENANTS" -ge 1 ]] || { echo "Error: --tenants must be ≥ 1"; exit 1; }
+[[ "$BUDGETS" =~ ^[0-9]+$ ]]                      || { echo "Error: --budgets must be a non-negative integer"; exit 1; }
+[[ "${#PROVIDER_NAMES[@]}" -ge 1 ]]               || { echo "Error: specify at least one --provider"; exit 1; }
+
+# ── compute ───────────────────────────────────────────────────────────────────
+T="$TENANTS"
+P="${#PROVIDER_NAMES[@]}"
+B="$BUDGETS"
+
+sum_mi=0   # Σ(M_p × I_p)
+sum_i=0    # Σ(I_p)
+sum_m=0    # Σ(M_p)
+
+for idx in "${!PROVIDER_NAMES[@]}"; do
+  m="${PROVIDER_MODELS[$idx]}"
+  i="${PROVIDER_TENANCY_IDS[$idx]}"
+  sum_mi=$(( sum_mi + m * i ))
+  sum_i=$(( sum_i + i ))
+  sum_m=$(( sum_m + m ))
+done
+
+s_usage=$(( 6 * T * sum_mi ))
+s_cost=$(( 1 * T * sum_i ))
+s_health=$(( 5 * T * P ))
+s_budgets=$(( 4 * B ))
+s_anomaly=$(( 2 * T * sum_m ))
+s_total=$(( s_usage + s_cost + s_health + s_budgets + s_anomaly ))
+
+# ── report ────────────────────────────────────────────────────────────────────
+print_header "Configuration"
+print_row "Tenants" "$T"
+print_row "Active providers" "$P"
+print_row "Budgets" "$B"
+for idx in "${!PROVIDER_NAMES[@]}"; do
+  pname="${PROVIDER_NAMES[$idx]}"
+  m="${PROVIDER_MODELS[$idx]}"
+  i="${PROVIDER_TENANCY_IDS[$idx]}"
+  print_row "  $pname" "models=$m  tenancy_ids=$i"
+done
+
+print_header "Series breakdown"
+print_row "Usage metrics (6 families × T × Σ M×I)" "$s_usage"
+print_row "Cost/tenancy  (1 family  × T × Σ I)"   "$s_cost"
+print_row "Health        (5 families × T × P)"     "$s_health"
+print_row "Budget alerts (4 families × B)"          "$s_budgets"
+print_row "Anomaly scores (2 families × T × Σ M)"  "$s_anomaly"
+printf "  %s\n" "$(printf '%.0s─' {1..52})"
+printf "  ${BOLD}%-42s %s${RESET}\n" "Total active series (estimated)" "$s_total"
+
+print_header "Assessment"
+if (( s_total < 2000 )); then
+  print_ok "Low cardinality — default Prometheus/VictoriaMetrics settings are fine."
+elif (( s_total < 20000 )); then
+  print_ok "Moderate cardinality — monitor TSDB head chunk memory; no tuning needed yet."
+  print_warn "Consider model filters (OPENAI_MODELS / ANTHROPIC_MODELS) to cap growth."
+elif (( s_total < 100000 )); then
+  print_warn "High cardinality — review label-dropping rules before deploying."
+  print_warn "Set --storage.tsdb.retention.size on Prometheus, or use recording rules."
+  print_warn "See docs/cardinality.md for OTLP collector and Prometheus relabel examples."
+else
+  printf "${RED}  ✗  Very high cardinality (%s series). Label-dropping is required.${RESET}\n" "$s_total"
+  printf "${RED}     See docs/cardinality.md for cardinality-reduction strategies.${RESET}\n"
+fi
+
+if (( sum_mi > 200 )); then
+  print_warn "Σ(models × tenancy_ids) = $sum_mi is large."
+  print_warn "Use provider-level model filters to reduce the model dimension."
+fi
+
+printf "\n${DIM}Formula: S = 6TΣ(M×I) + TΣI + 5TP + 4B + 2TΣM${RESET}\n"
+printf "${DIM}See docs/cardinality.md for filtering strategies and deployment sizing tables.${RESET}\n\n"

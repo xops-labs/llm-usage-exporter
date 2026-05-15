@@ -1,0 +1,18 @@
+{
+  "properties": {
+    "columns": [
+      { "name": "Cost", "type": "Number" },
+      { "name": "UsageDate", "type": "Number" },
+      { "name": "ResourceId", "type": "String" },
+      { "name": "Currency", "type": "String" }
+    ],
+    "rows": [
+      [
+        4.5,
+        20240309,
+        "subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.CognitiveServices/accounts/aoai-fixture",
+        "USD"
+      ]
+    ]
+  }
+}

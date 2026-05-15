@@ -1,0 +1,96 @@
+global:
+  scrape_interval: 30s
+
+scrape_configs:
+  - job_name: "llm-usage-exporter"
+    static_configs:
+      - targets: ["exporter:8080"]
+
+    # ── Cardinality-reduction relabel rules (all optional) ──────────────────
+    # These run after the scrape and before samples are written to the TSDB.
+    # Uncomment the blocks that match your cardinality budget.
+    # See docs/cardinality.md for the series-count formula and sizing guidance,
+    # and tools/cardinality-calc to estimate your deployment's series count.
+    #
+    # Rule order matters: drop rules are evaluated top-to-bottom; the first match
+    # wins.  Place broad drops before narrow rewrites.
+
+    metric_relabel_configs:
+
+      # ── 1. Drop "unknown" model series ─────────────────────────────────────
+      # Prevents accumulation of series whose model ID was empty or unparseable
+      # (sanitised to "unknown" by the exporter).  Safe to enable for all
+      # deployments — unknown-model series carry no useful attribution data.
+      #
+      #- source_labels: [model]
+      #  regex: "unknown"
+      #  action: drop
+
+      # ── 2. Suppress non-production tenants ─────────────────────────────────
+      # Drop all series from tenants used for development or testing.
+      # Adjust the regex to match your actual non-prod tenant IDs.
+      #
+      #- source_labels: [tenant]
+      #  regex: "dev|staging|sandbox"
+      #  action: drop
+
+      # ── 3. OpenAI model allowlist ───────────────────────────────────────────
+      # Drop any OpenAI series whose model is not in the approved set.
+      # The negative lookahead keeps the listed models; everything else is dropped.
+      # Add new model IDs to the alternation when you adopt them.
+      #
+      #- source_labels: [provider, model]
+      #  regex: "openai;(?!gpt-4o$|gpt-4o-mini$|o1-mini$).*"
+      #  action: drop
+
+      # ── 4. Anthropic model allowlist ────────────────────────────────────────
+      #
+      #- source_labels: [provider, model]
+      #  regex: "anthropic;(?!claude-3-5-sonnet-20241022$|claude-3-haiku-20240307$).*"
+      #  action: drop
+
+      # ── 5. Collapse unlisted models to "other" (aggregate, don't drop) ──────
+      # Preserves total token/cost counts while capping model-label cardinality.
+      # Use this instead of rule 3/4 when you still want aggregate visibility
+      # for models outside the approved set.
+      #
+      #- source_labels: [provider, model]
+      #  regex: "openai;(?!gpt-4o$|gpt-4o-mini$|o1-mini$)(.*)"
+      #  target_label: model
+      #  replacement: "other"
+
+      # ── 6. Drop the tenancy_id label from all series ────────────────────────
+      # Reduces M×I cardinality to M per (tenant, provider): one series per model
+      # instead of one per (model, project/workspace).
+      #
+      # Trade-off: per-project/workspace cost attribution is lost in this
+      # Prometheus instance.  Only use this if you have another pipeline (e.g., the
+      # OTLP Collector) retaining the full-fidelity data for showback purposes.
+      #
+      #- action: labeldrop
+      #  regex: "tenancy_id"
+
+      # ── 7. Drop specific tenancy IDs ────────────────────────────────────────
+      # Finer-grained alternative to rule 6: suppress specific projects or
+      # workspaces without removing the tenancy_id dimension entirely.
+      #
+      #- source_labels: [tenancy_id]
+      #  regex: "proj_dev|proj_sandbox|wrkspc_test"
+      #  action: drop
+
+      # ── 8. Drop anomaly score metrics ───────────────────────────────────────
+      # If anomaly scores are already sent to a dedicated alerting backend via the
+      # OTLP pipeline, suppress them here to avoid double-counting.
+      #
+      #- source_labels: [__name__]
+      #  regex: "llm_alerts_(cost|token)_anomaly_score"
+      #  action: drop
+
+      # ── 9. Drop cost-by-model if only aggregate cost is needed ──────────────
+      # llm_usage_cost_usd_by_model_total carries the model label and is the
+      # highest-cardinality cost metric.  If cost allocation at the model level is
+      # handled elsewhere, removing it cuts roughly 1/7 of total usage series.
+      #
+      #- source_labels: [__name__]
+      #  regex: "llm_usage_cost_usd_by_model_total"
+      #  action: drop

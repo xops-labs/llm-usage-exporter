@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<GetMetricDataResponse xmlns="http://monitoring.amazonaws.com/doc/2010-08-01/">
+  <GetMetricDataResult>
+    <MetricDataResults>
+      <member>
+        <Id>m1</Id>
+        <Label>anthropic.claude-3-5-sonnet-multi-v1:0</Label>
+        <Timestamps>
+          <member>2024-02-01T00:00:00Z</member>
+          <member>2024-02-01T01:00:00Z</member>
+        </Timestamps>
+        <Values>
+          <member>240</member>
+          <member>60</member>
+        </Values>
+        <StatusCode>Complete</StatusCode>
+      </member>
+    </MetricDataResults>
+  </GetMetricDataResult>
+  <ResponseMetadata><RequestId>req-input-multi</RequestId></ResponseMetadata>
+</GetMetricDataResponse>

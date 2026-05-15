@@ -1,0 +1,20 @@
+{
+  "schema": {
+    "fields": [
+      { "name": "day", "type": "TIMESTAMP" },
+      { "name": "sku", "type": "STRING" },
+      { "name": "cost", "type": "FLOAT" },
+      { "name": "currency", "type": "STRING" }
+    ]
+  },
+  "rows": [
+    {
+      "f": [
+        { "v": "2024-01-01T00:00:00Z" },
+        { "v": "gemini-fixture input tokens" },
+        { "v": "2.75" },
+        { "v": "USD" }
+      ]
+    }
+  ]
+}

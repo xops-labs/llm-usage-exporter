@@ -1,0 +1,41 @@
+# Kubernetes NetworkPolicy for Prometheus
+#
+# Permits Prometheus to reach the llm-usage-exporter pod in the llm-monitoring
+# namespace.  Apply this in the namespace where Prometheus runs (typically
+# "monitoring") alongside your existing Prometheus NetworkPolicy.
+#
+# This policy only adds a targeted egress rule; it does not restrict Prometheus's
+# other ingress/egress.  Combine with your existing Prometheus NetworkPolicy
+# using merge semantics, or apply it as a second NetworkPolicy object (multiple
+# policies in a namespace are unioned, not overridden).
+#
+# Apply:
+#   kubectl apply -f prometheus-netpol.yaml --namespace monitoring
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: prometheus-scrape-llm-exporter
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus
+
+  policyTypes:
+    - Egress
+
+  egress:
+    # Allow scraping the exporter's /metrics on port 8080 in the llm-monitoring namespace.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: llm-monitoring
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: llm-usage-exporter
+      ports:
+        - protocol: TCP
+          port: 8080

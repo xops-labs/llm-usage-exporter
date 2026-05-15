@@ -1,0 +1,119 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "llm-usage-exporter.configMapName" . }}
+  labels:
+    {{- include "llm-usage-exporter.labels" . | nindent 4 }}
+data:
+  ASPNETCORE_URLS: "http://+:8080"
+  EXPORTER_POLL_INTERVAL_SECONDS: {{ .Values.exporter.pollIntervalSeconds | quote }}
+  EXPORTER_LOOKBACK_MINUTES: {{ .Values.exporter.lookbackMinutes | quote }}
+  {{- if .Values.openai.enabled }}
+  {{- with .Values.openai.projectIds }}
+  OPENAI_PROJECT_IDS: {{ join "," . | quote }}
+  {{- end }}
+  {{- with .Values.openai.models }}
+  OPENAI_MODELS: {{ join "," . | quote }}
+  {{- end }}
+  {{- with .Values.openai.apiKeyIds }}
+  OPENAI_API_KEY_IDS: {{ join "," . | quote }}
+  {{- end }}
+  {{- with .Values.openai.userIds }}
+  OPENAI_USER_IDS: {{ join "," . | quote }}
+  {{- end }}
+  {{- with .Values.openai.groupBy }}
+  EXPORTER_GROUP_BY: {{ join "," . | quote }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.azureOpenAi.enabled }}
+  {{- with .Values.azureOpenAi.subscriptionId }}
+  AZURE_OPENAI_SUBSCRIPTION_ID: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.azureOpenAi.resourceGroup }}
+  AZURE_OPENAI_RESOURCE_GROUP: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.azureOpenAi.accountResourceIds }}
+  AZURE_OPENAI_ACCOUNT_RESOURCE_IDS: {{ join "," . | quote }}
+  {{- end }}
+  {{- with .Values.azureOpenAi.models }}
+  AZURE_OPENAI_MODELS: {{ join "," . | quote }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.anthropic.enabled }}
+  ANTHROPIC_VERSION: {{ .Values.anthropic.version | quote }}
+  {{- with .Values.anthropic.workspaceIds }}
+  ANTHROPIC_WORKSPACE_IDS: {{ join "," . | quote }}
+  {{- end }}
+  {{- with .Values.anthropic.models }}
+  ANTHROPIC_MODELS: {{ join "," . | quote }}
+  {{- end }}
+  {{- with .Values.anthropic.apiKeyIds }}
+  ANTHROPIC_API_KEY_IDS: {{ join "," . | quote }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.gemini.enabled }}
+  {{- with .Values.gemini.projectId }}
+  GEMINI_PROJECT_ID: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.gemini.billingProjectId }}
+  GEMINI_BILLING_PROJECT_ID: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.gemini.billingDatasetProject }}
+  GEMINI_BILLING_DATASET_PROJECT: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.gemini.billingDatasetId }}
+  GEMINI_BILLING_DATASET_ID: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.gemini.billingTable }}
+  GEMINI_BILLING_TABLE: {{ . | quote }}
+  {{- end }}
+  GEMINI_ENABLE_COST_QUERIES: {{ .Values.gemini.enableCostQueries | quote }}
+  {{- with .Values.gemini.models }}
+  GEMINI_MODELS: {{ join "," . | quote }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.bedrock.enabled }}
+  AWS_REGION: {{ .Values.bedrock.region | quote }}
+  {{- with .Values.bedrock.modelIds }}
+  BEDROCK_MODEL_IDS: {{ join "," . | quote }}
+  {{- end }}
+  BEDROCK_ENABLE_COST_QUERIES: {{ .Values.bedrock.enableCostQueries | quote }}
+  {{- end }}
+  {{- if .Values.otel.enabled }}
+  {{- with .Values.otel.endpoint }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ . | quote }}
+  {{- end }}
+  OTEL_EXPORTER_OTLP_PROTOCOL: {{ .Values.otel.protocol | quote }}
+  OTEL_SERVICE_NAME: {{ .Values.otel.serviceName | quote }}
+  {{- end }}
+  OTEL_TRACE_CONTEXT_PROPAGATION_ENABLED: {{ .Values.otel.tracePropagationEnabled | quote }}
+  {{- with .Values.checkpoints }}
+  CHECKPOINTS_PROVIDER: {{ .provider | quote }}
+  {{- if .filePath }}
+  CHECKPOINTS_FILE_PATH: {{ .filePath | quote }}
+  {{- end }}
+  {{- if .maxEntries }}
+  CHECKPOINTS_MAX_ENTRIES: {{ .maxEntries | quote }}
+  {{- end }}
+  {{- if .retentionHours }}
+  CHECKPOINTS_RETENTION_HOURS: {{ .retentionHours | quote }}
+  {{- end }}
+  {{- if .flushIntervalSeconds }}
+  CHECKPOINTS_FLUSH_INTERVAL_SECONDS: {{ .flushIntervalSeconds | quote }}
+  {{- end }}
+  {{- end }}
+  {{- with .Values.alerts }}
+  ALERTS_ENABLED: {{ .enabled | quote }}
+  {{- if .evaluationIntervalSeconds }}
+  ALERTS_EVALUATION_INTERVAL_SECONDS: {{ .evaluationIntervalSeconds | quote }}
+  {{- end }}
+  {{- if .rollingWindowBuckets }}
+  ALERTS_ROLLING_WINDOW_BUCKETS: {{ .rollingWindowBuckets | quote }}
+  {{- end }}
+  {{- end }}
+  {{- with .Values.focus }}
+  FOCUS_ENABLED: {{ .enabled | quote }}
+  {{- if .maxRecords }}
+  FOCUS_MAX_RECORDS: {{ .maxRecords | quote }}
+  {{- end }}
+  {{- end }}

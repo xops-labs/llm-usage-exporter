@@ -1,0 +1,24 @@
+apiVersion: v2
+name: llm-usage-exporter
+description: Real-time, self-hosted Prometheus exporter for LLM usage and cost across OpenAI, Azure OpenAI, Anthropic Claude, Google Gemini, and AWS Bedrock.
+type: application
+version: 0.2.0
+appVersion: "0.2.0"
+keywords:
+  - llm
+  - prometheus
+  - exporter
+  - finops
+  - ai-cost
+  - openai
+  - anthropic
+  - gemini
+  - bedrock
+  - azure-openai
+maintainers:
+  - name: xops-labs/maintainers
+    url: https://github.com/orgs/xops-labs/teams/maintainers
+sources:
+  - https://github.com/xops-labs/llm-usage-exporter
+home: https://github.com/xops-labs/llm-usage-exporter
+icon: ""

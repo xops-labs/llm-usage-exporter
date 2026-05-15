@@ -1,0 +1,55 @@
+llm-usage-exporter has been installed.
+{{- if gt (int .Values.replicaCount) 1 }}
+
+⚠️  WARNING: replicaCount is set to {{ .Values.replicaCount }}.
+   Running multiple replicas against the same tenant subset will double-count
+   usage and cost metrics. There is no shared checkpoint store today.
+   For horizontal scale, deploy separate Helm releases with disjoint tenant
+   subsets. See the Helm chart README "High availability and sharding" section.
+{{- end }}
+
+Release : {{ .Release.Name }}
+Chart   : {{ .Chart.Name }}-{{ .Chart.Version }} (app {{ .Chart.AppVersion }})
+Image   : {{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}
+
+Enabled providers:
+{{- if .Values.openai.enabled }}
+  - OpenAI
+{{- end }}
+{{- if .Values.azureOpenAi.enabled }}
+  - Azure OpenAI
+{{- end }}
+{{- if .Values.anthropic.enabled }}
+  - Anthropic
+{{- end }}
+{{- if .Values.gemini.enabled }}
+  - Google Gemini / Vertex AI
+{{- end }}
+{{- if .Values.bedrock.enabled }}
+  - AWS Bedrock
+{{- end }}
+{{- if not (or .Values.openai.enabled .Values.azureOpenAi.enabled .Values.anthropic.enabled .Values.gemini.enabled .Values.bedrock.enabled) }}
+  (none — set <provider>.enabled=true in values.yaml and supply credentials)
+{{- end }}
+
+Scrape integration:
+{{- if .Values.serviceMonitor.enabled }}
+  - ServiceMonitor "{{ include "llm-usage-exporter.fullname" . }}" in namespace
+    {{ default .Release.Namespace .Values.serviceMonitor.namespace }} (Prometheus Operator)
+{{- end }}
+{{- if .Values.prometheusScrape.enabled }}
+  - Service annotations: prometheus.io/scrape=true on port 8080, path /metrics
+{{- end }}
+
+To reach the exporter from your workstation:
+
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "llm-usage-exporter.fullname" . }} 8080:{{ .Values.service.port }}
+
+Then visit:
+  - http://localhost:8080/metrics  (Prometheus metrics)
+  - http://localhost:8080/health   (liveness/readiness JSON)
+  - http://localhost:8080/         (service banner)
+
+Tail logs with:
+
+  kubectl --namespace {{ .Release.Namespace }} logs -l app.kubernetes.io/instance={{ .Release.Name }} -f

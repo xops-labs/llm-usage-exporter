@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+.git/
+.vs/
+.vscode/
+.idea/
+TestResults/
+coverage/
+.env
+*.env.local
+README.md
+dashboards/

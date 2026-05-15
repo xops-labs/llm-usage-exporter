@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and general support
+    url: https://github.com/xops-labs/llm-usage-exporter/discussions/categories/q-a
+    about: Ask a question, get help with configuration, or share setup tips.
+  - name: Ideas and roadmap feedback
+    url: https://github.com/xops-labs/llm-usage-exporter/discussions/categories/ideas
+    about: Discuss larger ideas, RFCs, or roadmap input before opening a feature request.
+  - name: Show and tell
+    url: https://github.com/xops-labs/llm-usage-exporter/discussions/categories/show-and-tell
+    about: Share dashboards, integrations, war stories, or how you're using the exporter.
+  - name: Security disclosure (private)
+    url: https://github.com/xops-labs/llm-usage-exporter/security/advisories/new
+    about: Report a vulnerability privately. Please do NOT open a public issue for security problems.

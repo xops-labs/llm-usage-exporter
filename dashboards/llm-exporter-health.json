@@ -1,0 +1,851 @@
+{
+  "title": "LLM Usage — Exporter Health",
+  "uid": "llm-exporter-health",
+  "tags": [
+    "llm-usage-exporter",
+    "operations",
+    "sre",
+    "health"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "30s",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "tenant",
+        "label": "Tenant",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "DS_PROMETHEUS"
+        },
+        "query": "label_values(llm_exporter_poll_success_total, tenant)",
+        "includeAll": true,
+        "allValue": ".+",
+        "multi": true,
+        "refresh": 2,
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        }
+      }
+    ]
+  },
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Provider freshness (sec since last successful poll)",
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "DS_PROMETHEUS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 600,
+                "color": "yellow"
+              },
+              {
+                "value": 1800,
+                "color": "red"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "time() - max by (provider) (llm_exporter_last_success_timestamp)",
+          "legendFormat": "{{provider}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Poll success rate per provider",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "DS_PROMETHEUS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider) (rate(llm_exporter_poll_success_total{tenant=~\"$tenant\"}[15m]))",
+          "legendFormat": "{{provider}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Poll failure rate per provider",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "DS_PROMETHEUS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "openai"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "azure_openai"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "dark-red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "anthropic"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "gemini"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "dark-orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bedrock"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "semi-dark-red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider) (rate(llm_exporter_poll_failure_total{tenant=~\"$tenant\"}[15m]))",
+          "legendFormat": "{{provider}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Last poll duration per provider",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "DS_PROMETHEUS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "llm_exporter_last_poll_duration_seconds{tenant=~\"$tenant\"}",
+          "legendFormat": "{{provider}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Cumulative poll failures (counter view)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "DS_PROMETHEUS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "llm_exporter_poll_failure_total{tenant=~\"$tenant\"}",
+          "legendFormat": "{{provider}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "table",
+      "title": "Per-provider health summary",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "DS_PROMETHEUS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto"
+          }
+        }
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "expr": "llm_exporter_poll_success_total{tenant=~\"$tenant\"}",
+          "legendFormat": "{{provider}}",
+          "refId": "A"
+        },
+        {
+          "expr": "llm_exporter_poll_failure_total{tenant=~\"$tenant\"}",
+          "legendFormat": "{{provider}}",
+          "refId": "B"
+        },
+        {
+          "expr": "time() - max by (provider) (llm_exporter_last_success_timestamp{tenant=~\"$tenant\"})",
+          "legendFormat": "{{provider}}",
+          "refId": "C"
+        },
+        {
+          "expr": "llm_exporter_last_poll_duration_seconds{tenant=~\"$tenant\"}",
+          "legendFormat": "{{provider}}",
+          "refId": "D"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {}
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "Value #A1": "successes",
+              "Value #A2": "successes",
+              "Value #A3": "successes",
+              "Value #A4": "successes",
+              "Value #A5": "successes",
+              "Value #B1": "failures",
+              "Value #B2": "failures",
+              "Value #B3": "failures",
+              "Value #B4": "failures",
+              "Value #B5": "failures",
+              "Value #C1": "last success (s ago)",
+              "Value #C2": "last success (s ago)",
+              "Value #C3": "last success (s ago)",
+              "Value #C4": "last success (s ago)",
+              "Value #C5": "last success (s ago)",
+              "Value #D1": "duration (s)",
+              "Value #D2": "duration (s)",
+              "Value #D3": "duration (s)",
+              "Value #D4": "duration (s)",
+              "Value #D5": "duration (s)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "bargauge",
+      "title": "Failure ratio per provider (15m)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "DS_PROMETHEUS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 0.2,
+                "color": "yellow"
+              },
+              {
+                "value": 0.5,
+                "color": "red"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "showUnfilled": true
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider) (rate(llm_exporter_poll_failure_total{tenant=~\"$tenant\"}[15m]) / clamp_min(rate(llm_exporter_poll_success_total{tenant=~\"$tenant\"}[15m]) + rate(llm_exporter_poll_failure_total{tenant=~\"$tenant\"}[15m]), 1))",
+          "legendFormat": "{{provider}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "row",
+      "title": "OTLP pipeline health",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "collapsed": false
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "OTLP exporter send errors",
+      "description": "Rate of metric points that the OTel collector failed to export. A non-zero rate means the OTLP endpoint is unreachable or rejecting data. Prometheus exposition continues independently. Source: OTel collector self-metrics scraped on port 8888.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 29
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "DS_PROMETHEUS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "red"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 0.001,
+                "color": "red"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(otelcol_exporter_send_failed_metric_points_total{exporter=\"otlphttp/managed\"}[15m])",
+          "legendFormat": "otlphttp/managed — failed points/s",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(otelcol_exporter_enqueue_failed_metric_points_total{exporter=\"otlphttp/managed\"}[15m])",
+          "legendFormat": "otlphttp/managed — queue drop/s",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "OTLP exporter queue utilization",
+      "description": "Queue fill fraction for each OTLP exporter. Approaching 1.0 means the collector is saturated — metric points will be dropped once the queue overflows. A sustained high queue is a leading indicator of OTLP send errors.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 29
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "DS_PROMETHEUS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 0.5,
+                "color": "yellow"
+              },
+              {
+                "value": 0.8,
+                "color": "red"
+              }
+            ]
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "otelcol_exporter_queue_size{exporter=\"otlphttp/managed\"} / clamp_min(otelcol_exporter_queue_capacity{exporter=\"otlphttp/managed\"}, 1)",
+          "legendFormat": "otlphttp/managed",
+          "refId": "A"
+        },
+        {
+          "expr": "otelcol_exporter_queue_size{exporter=\"prometheusremotewrite\"} / clamp_min(otelcol_exporter_queue_capacity{exporter=\"prometheusremotewrite\"}, 1)",
+          "legendFormat": "prometheusremotewrite",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "type": "stat",
+      "title": "Providers currently unhealthy",
+      "description": "Count of (tenant, provider) combinations with a non-zero poll failure rate in the last 15 minutes. Green = 0 failures; any red means at least one provider is degraded. Per-provider isolation means other providers continue normally.",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 37
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "DS_PROMETHEUS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 1,
+                "color": "red"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "count(rate(llm_exporter_poll_failure_total{tenant=~\"$tenant\"}[15m]) > 0) or vector(0)",
+          "legendFormat": "unhealthy providers",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "type": "stat",
+      "title": "OTLP send errors (15 m)",
+      "description": "Total OTLP metric points that failed to export in the last 15 minutes. Zero is healthy. A non-zero value means Prometheus exposition is the only active signal surface.",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 37
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "DS_PROMETHEUS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 1,
+                "color": "red"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "increase(otelcol_exporter_send_failed_metric_points_total{exporter=\"otlphttp/managed\"}[15m])",
+          "legendFormat": "OTLP send errors",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "type": "stat",
+      "title": "Checkpoint store",
+      "description": "Staleness of the oldest provider across all tenants. A value > 1800 s means at least one provider has not successfully polled in 30 minutes — check credentials or provider status.",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 37
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "DS_PROMETHEUS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 600,
+                "color": "yellow"
+              },
+              {
+                "value": 1800,
+                "color": "red"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "text": {}
+      },
+      "targets": [
+        {
+          "expr": "max(time() - llm_exporter_last_success_timestamp{tenant=~\"$tenant\"})",
+          "legendFormat": "worst provider staleness",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "type": "stat",
+      "title": "Last success — all providers",
+      "description": "Most recent successful poll across all (tenant, provider) combinations. A recent timestamp means at least one provider is healthy.",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 37
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "DS_PROMETHEUS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeAsLocal",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "max(llm_exporter_last_success_timestamp{tenant=~\"$tenant\"}) * 1000",
+          "legendFormat": "latest success",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "text",
+      "title": "About these metrics",
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 41
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "## Two kinds of freshness\n\nThe **Freshness** stat panels above measure `time() - last_success_timestamp` — how long since the exporter last **successfully polled** each provider. Green ≤ 10 min, Yellow ≤ 30 min, Red beyond. A green panel means the exporter is collecting data normally.\n\n**A green freshness panel does not mean cost data is current.** Provider billing-history APIs have their own publication lag, independent of the exporter’s poll interval:\n\n| Provider | Token data | Cost data |\n|---|---|---|\n| OpenAI | Within minutes | ~1–2 hours |\n| Azure OpenAI | Within minutes | **24–72 hours** |\n| Anthropic | Within minutes | ~1–4 hours |\n| Google Gemini | Within minutes | **1–2 days** |\n| AWS Bedrock | Within minutes | **24–48 hours** |\n\nUse token-rate panels (see the Tokens & Caching dashboard) as the near-real-time spend signal. Budget alerts fired from `llm_usage_cost_usd_total` reflect data already delayed by the amounts above.\n\n---\n\n**Poll success / failure** is incremented once per polling iteration per (tenant, provider) registration. A credential failure on one provider does not stop the others.\n\n**Last poll duration** captures wall-clock time for that provider’s `GetUsageAsync` + `GetCostsAsync` pair.\n\n---\n\n## OTLP pipeline panels\n\n**OTLP exporter errors** and **queue utilization** panels query the OTel collector’s self-metrics (exposed on port 8888 by default). Add a Prometheus scrape job for `otelcol:8888` to populate these panels — they show `No data` until the collector’s own metrics are scraped.\n\nIf OTLP fails, Prometheus exposition continues independently. A non-zero error rate means the OTLP signal surface is degraded; the Prometheus counters in the rows above remain authoritative.\n\n**See also:** [docs/failure-modes.md](https://github.com/your-org/llm-usage-exporter/blob/main/docs/failure-modes.md)"
+      }
+    }
+  ]
+}

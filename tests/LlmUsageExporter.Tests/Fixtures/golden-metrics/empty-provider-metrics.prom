@@ -1,0 +1,11 @@
+# Golden /metrics snapshot — empty providers scenario.
+# Asserts these substrings are ABSENT from the scrape when every provider
+# returns no usage and no costs. Lines below are negative assertions: the
+# scrape must NOT contain any of these prefixes.
+NEGATIVE:llm_usage_input_tokens_total{
+NEGATIVE:llm_usage_output_tokens_total{
+NEGATIVE:llm_usage_total_tokens_total{
+NEGATIVE:llm_usage_cached_input_tokens_total{
+NEGATIVE:llm_usage_requests_total{
+NEGATIVE:llm_usage_cost_usd_total{
+NEGATIVE:llm_usage_cost_usd_by_model_total{

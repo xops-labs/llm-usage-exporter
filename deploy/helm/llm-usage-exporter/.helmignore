@@ -1,0 +1,22 @@
+# Patterns to ignore when building Helm chart packages.
+# See https://helm.sh/docs/chart_template_guide/helmignore/
+.DS_Store
+.git/
+.gitignore
+.bzr/
+.bzrignore
+.hg/
+.hgignore
+.svn/
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+.project
+.idea/
+.vscode/
+*.tmproj
+*.iml
+*.log
+OWNERS

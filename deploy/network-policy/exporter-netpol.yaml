@@ -1,0 +1,87 @@
+# Kubernetes NetworkPolicy for llm-usage-exporter
+#
+# Restricts:
+#   Ingress — only the Prometheus pod (in the "monitoring" namespace) can reach
+#             port 8080.  Adjust the namespaceSelector / podSelector if your
+#             Prometheus runs elsewhere.
+#   Egress  — only HTTPS (443) to provider APIs, and DNS (53/UDP+TCP) for name
+#             resolution.  Add extra egress rules if you route OTLP to a
+#             collector that listens on a different port.
+#
+# Prerequisites:
+#   Your cluster must have a CNI plugin that enforces NetworkPolicy
+#   (Calico, Cilium, Weave, etc.).  The policy is silently ignored otherwise.
+#
+# Apply:
+#   kubectl apply -f exporter-netpol.yaml --namespace llm-monitoring
+#
+# Adjust the namespace label and pod label selectors to match your deployment.
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: llm-usage-exporter
+  namespace: llm-monitoring
+  labels:
+    app.kubernetes.io/name: llm-usage-exporter
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: llm-usage-exporter
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    # Allow Prometheus to scrape /metrics on port 8080.
+    # Change namespaceSelector if Prometheus lives in a namespace other than "monitoring".
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: 8080
+
+    # Uncomment to also allow the kubernetes readiness/liveness probe from the
+    # kubelet.  The kubelet IP is on the node network, not pod network, so
+    # allowing it here requires a separate rule with an ipBlock if your CNI does
+    # not automatically permit kubelet probes.
+    #
+    # - from:
+    #     - ipBlock:
+    #         cidr: 0.0.0.0/0    # tighten to your node CIDR in production
+    #   ports:
+    #     - protocol: TCP
+    #       port: 8080
+
+  egress:
+    # Allow HTTPS to all external hosts (provider APIs, OTLP collector).
+    # Tighten to specific CIDRs if your network topology allows it.
+    - ports:
+        - protocol: TCP
+          port: 443
+
+    # Allow gRPC OTLP to the collector (default port 4317).
+    # Remove if not using OTLP export.
+    - ports:
+        - protocol: TCP
+          port: 4317
+
+    # Allow HTTP/protobuf OTLP (port 4318).
+    # Remove if not using OTLP export.
+    - ports:
+        - protocol: TCP
+          port: 4318
+
+    # Allow DNS resolution.
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

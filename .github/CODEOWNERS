@@ -1,0 +1,26 @@
+# CODEOWNERS for llm-usage-exporter
+#
+# These owners are automatically requested for review on PRs that touch matching paths.
+# The last matching pattern wins, so put more specific paths below more general ones.
+#
+# Docs: https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repo.
+*                                   @xops-labs/maintainers
+
+# Core exporter code
+/src/                               @xops-labs/maintainers
+/tests/                             @xops-labs/maintainers
+
+# Deployment, dashboards, and Docker artifacts
+/deploy/                            @xops-labs/maintainers
+/dashboards/                        @xops-labs/maintainers
+
+# Governance, security, and community documents
+/.github/                           @xops-labs/maintainers
+/CODE_OF_CONDUCT.md                 @xops-labs/maintainers
+/CONTRIBUTING.md                    @xops-labs/maintainers
+/SECURITY.md                        @xops-labs/maintainers
+/LICENSE                            @xops-labs/maintainers
+/NOTICE                             @xops-labs/maintainers
+/AUTHORS.md                         @xops-labs/maintainers

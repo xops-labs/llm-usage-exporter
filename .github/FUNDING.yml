@@ -1,0 +1,13 @@
+# Funding sources displayed on the repo's Sponsor button.
+# Uncomment and fill in the platforms you actually use. Leaving the file
+# without any active entries simply hides the Sponsor button.
+#
+# Docs: https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+
+# github: [xops-labs]
+# ko_fi: xops-labs
+# buy_me_a_coffee: xops-labs
+# open_collective: llm-usage-exporter
+# patreon: xops-labs
+# tidelift: nuget/LlmUsageExporter
+# custom: ["https://example.com/sponsor"]

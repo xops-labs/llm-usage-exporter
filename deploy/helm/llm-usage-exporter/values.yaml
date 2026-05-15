@@ -1,0 +1,206 @@
+# Default values for llm-usage-exporter.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  repository: ghcr.io/xops-labs/llm-usage-exporter
+  # tag overrides Chart.AppVersion when set.
+  tag: ""
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+# Single replica is the supported default. Increasing this without an external
+# checkpoint store (Redis / PostgreSQL — not yet shipped) causes double-counting:
+# both pods independently re-poll the same buckets and inflate *_total counters.
+# For horizontal scale, shard tenants across separate Deployments each with its
+# own PVC. See the Helm README "High availability and sharding" section.
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+serviceAccount:
+  create: true
+  # If empty, the chart derives the name from fullname.
+  name: ""
+  annotations: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}
+
+# Additional volumes and volume mounts on the exporter container. The most
+# common reason to use these is to mount a PVC at the path configured in
+# checkpoints.filePath when checkpoints.provider is "File" — see the Helm
+# README for the worked example. Lists are rendered into the Deployment
+# template verbatim, so the entries must be valid Kubernetes Volume /
+# VolumeMount objects.
+extraVolumes: []
+extraVolumeMounts: []
+
+service:
+  type: ClusterIP
+  port: 8080
+  annotations: {}
+
+# Container-level probes — point at /health (200 on healthy, 503 on unhealthy).
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 30
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+# Exporter-wide tuning. Maps to EXPORTER_* env vars.
+exporter:
+  pollIntervalSeconds: 300
+  lookbackMinutes: 60
+
+# OpenAI provider configuration.
+openai:
+  enabled: false
+  adminApiKey: ""            # → Secret  (OPENAI_ADMIN_API_KEY)
+  orgId: ""                  # → Secret  (OPENAI_ORG_ID)
+  projectIds: []             # → ConfigMap CSV (OPENAI_PROJECT_IDS)
+  models: []                 # → ConfigMap CSV (OPENAI_MODELS)
+  apiKeyIds: []              # → ConfigMap CSV (OPENAI_API_KEY_IDS)
+  userIds: []                # → ConfigMap CSV (OPENAI_USER_IDS)
+  groupBy:
+    - model
+    - project_id
+
+# Azure OpenAI provider configuration.
+azureOpenAi:
+  enabled: false
+  tenantId: ""               # → Secret  (AZURE_OPENAI_TENANT_ID)
+  clientId: ""               # → Secret  (AZURE_OPENAI_CLIENT_ID)
+  clientSecret: ""           # → Secret  (AZURE_OPENAI_CLIENT_SECRET)
+  subscriptionId: ""         # → ConfigMap (AZURE_OPENAI_SUBSCRIPTION_ID)
+  resourceGroup: ""          # → ConfigMap (AZURE_OPENAI_RESOURCE_GROUP)
+  accountResourceIds: []     # → ConfigMap CSV (AZURE_OPENAI_ACCOUNT_RESOURCE_IDS)
+  models: []                 # → ConfigMap CSV (AZURE_OPENAI_MODELS)
+
+# Anthropic provider configuration.
+anthropic:
+  enabled: false
+  adminApiKey: ""            # → Secret  (ANTHROPIC_ADMIN_API_KEY)
+  version: "2023-06-01"      # → ConfigMap (ANTHROPIC_VERSION)
+  workspaceIds: []           # → ConfigMap CSV (ANTHROPIC_WORKSPACE_IDS)
+  models: []                 # → ConfigMap CSV (ANTHROPIC_MODELS)
+  apiKeyIds: []              # → ConfigMap CSV (ANTHROPIC_API_KEY_IDS)
+
+# Google Gemini / Vertex AI provider configuration.
+gemini:
+  enabled: false
+  projectId: ""              # → ConfigMap (GEMINI_PROJECT_ID)
+  accessToken: ""            # → Secret  (GEMINI_ACCESS_TOKEN) — short-lived bearer token
+  # Path inside the container to the JSON keyfile. Only used when you mount a key from another source.
+  # Leave blank to let the chart manage the file from serviceAccountKey below.
+  serviceAccountKeyFile: ""
+  # Inline JSON for the service account. When non-empty the chart writes it to a dedicated
+  # Secret, mounts it at /secrets/gemini-sa.json, and sets GEMINI_SERVICE_ACCOUNT_KEY_FILE.
+  serviceAccountKey: ""
+  enableCostQueries: false   # → ConfigMap (GEMINI_ENABLE_COST_QUERIES)
+  billingProjectId: ""       # → ConfigMap (GEMINI_BILLING_PROJECT_ID)
+  billingDatasetProject: ""  # → ConfigMap (GEMINI_BILLING_DATASET_PROJECT)
+  billingDatasetId: ""       # → ConfigMap (GEMINI_BILLING_DATASET_ID)
+  billingTable: ""           # → ConfigMap (GEMINI_BILLING_TABLE)
+  models: []                 # → ConfigMap CSV (GEMINI_MODELS)
+
+# AWS Bedrock provider configuration.
+bedrock:
+  enabled: false
+  accessKeyId: ""            # → Secret (AWS_ACCESS_KEY_ID)
+  secretAccessKey: ""        # → Secret (AWS_SECRET_ACCESS_KEY)
+  sessionToken: ""           # → Secret (AWS_SESSION_TOKEN)
+  region: us-east-1          # → ConfigMap (AWS_REGION)
+  modelIds: []               # → ConfigMap CSV (BEDROCK_MODEL_IDS)
+  enableCostQueries: true    # → ConfigMap (BEDROCK_ENABLE_COST_QUERIES)
+
+# Optional OpenTelemetry OTLP export. When endpoint is set, the exporter emits
+# llm.usage.* metrics and traces over OTLP. W3C traceparent propagation to
+# provider APIs is enabled by default and can be disabled below.
+otel:
+  enabled: false
+  endpoint: ""               # OTEL_EXPORTER_OTLP_ENDPOINT
+  protocol: grpc             # OTEL_EXPORTER_OTLP_PROTOCOL (grpc | http/protobuf)
+  headers: ""                # OTEL_EXPORTER_OTLP_HEADERS (treated as sensitive)
+  serviceName: llm-usage-exporter
+  tracePropagationEnabled: true # OTEL_TRACE_CONTEXT_PROPAGATION_ENABLED
+
+# Durable checkpoint storage. Defaults to in-memory (stateless). Switch to "File"
+# and mount a persistent volume at filePath if you want crash-restart safety.
+checkpoints:
+  provider: InMemory         # CHECKPOINTS_PROVIDER (InMemory | File)
+  filePath: ""               # CHECKPOINTS_FILE_PATH (e.g. /data/checkpoints.jsonl when File)
+  maxEntries: ""             # CHECKPOINTS_MAX_ENTRIES (defaults to 100000 in code)
+  retentionHours: ""         # CHECKPOINTS_RETENTION_HOURS (defaults to 168 in code)
+  flushIntervalSeconds: ""   # CHECKPOINTS_FLUSH_INTERVAL_SECONDS
+
+# Budget burn + cost / token anomaly alerting. Budgets themselves are configured
+# via the Alerts:Budgets section of appsettings.json (mount a values-driven
+# ConfigMap with that block if you need budgets in cluster).
+alerts:
+  enabled: true              # ALERTS_ENABLED
+  evaluationIntervalSeconds: ""   # ALERTS_EVALUATION_INTERVAL_SECONDS
+  rollingWindowBuckets: ""        # ALERTS_ROLLING_WINDOW_BUCKETS
+
+# FOCUS v1.0 export at /focus.csv and /focus.json.
+focus:
+  enabled: true              # FOCUS_ENABLED
+  maxRecords: ""             # FOCUS_MAX_RECORDS
+
+# Kubernetes NetworkPolicy — restricts ingress to Prometheus only and egress to HTTPS + DNS.
+# Requires a CNI plugin that enforces NetworkPolicy (Calico, Cilium, Weave, etc.).
+# See deploy/network-policy/README.md for standalone YAML and Istio AuthorizationPolicy examples.
+networkPolicy:
+  enabled: false
+  # Namespace where Prometheus runs. Used in the namespaceSelector ingress rule.
+  prometheusNamespace: monitoring
+  # Pod-level selector for the Prometheus pod(s) allowed to scrape.
+  prometheusSelector:
+    app.kubernetes.io/name: prometheus
+  # Extra ingress rules appended verbatim (NetworkPolicy ingress list items).
+  additionalIngressRules: []
+  # Extra TCP ports added to the egress allow-list (integers).
+  additionalEgressPorts: []
+
+# Prometheus Operator integration. If enabled and the CRD is present, render a ServiceMonitor.
+serviceMonitor:
+  enabled: false
+  namespace: ""
+  interval: 60s
+  scrapeTimeout: 30s
+  labels: {}
+  relabelings: []
+  metricRelabelings: []
+
+# Static Prometheus scrape annotations on the Service (useful without Prometheus Operator).
+prometheusScrape:
+  enabled: true

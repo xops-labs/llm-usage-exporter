@@ -1,0 +1,23 @@
+{
+  "object": "page",
+  "data": [
+    {
+      "object": "bucket",
+      "start_time": 1710000000,
+      "end_time": 1710003600,
+      "results": [
+        {
+          "object": "organization.usage.completions.result",
+          "input_tokens": 12,
+          "output_tokens": 8,
+          "input_cached_tokens": 3,
+          "num_model_requests": 2,
+          "model": "gpt-fixture",
+          "project_id": "proj_fixture_openai"
+        }
+      ]
+    }
+  ],
+  "has_more": false,
+  "next_page": null
+}

@@ -1,0 +1,101 @@
+name: Bug report
+description: Report unexpected behavior in llm-usage-exporter
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please fill in the sections below so we can reproduce it quickly.
+
+        Before opening, please search existing [issues](../issues?q=is%3Aissue) and [discussions](../discussions) to avoid duplicates.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One or two sentences describing the bug.
+      placeholder: "The exporter returns 500 when OPENAI_PROJECT_IDS contains a trailing comma."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Minimal, deterministic steps. Include the exact command, env vars, and request you ran.
+      placeholder: |
+        1. Set `OPENAI_PROJECT_IDS=proj_abc,`
+        2. Run `docker compose -f deploy/docker-compose.yml up`
+        3. curl http://localhost:8080/metrics
+      render: bash
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: "Trailing commas should be ignored; the exporter should start and expose metrics."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include relevant log lines, stack traces, and the full HTTP response if applicable. Redact any API keys.
+      render: text
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: llm-usage-exporter version
+      description: Git SHA, tag, or Docker image tag.
+      placeholder: "v0.1.0 / commit 668bc1f"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment mode
+      options:
+        - Local dotnet run
+        - Docker Compose
+        - Kubernetes
+        - Other (describe in environment)
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, .NET version, Prometheus version, Grafana version (where relevant).
+      placeholder: |
+        - OS: Ubuntu 24.04
+        - .NET: 10.0.x
+        - Prometheus: 2.55.0
+        - Docker: 27.3.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / metrics snippet
+      description: Paste relevant exporter logs or a `/metrics` snippet. Redact secrets.
+      render: text
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: I searched existing issues and discussions and found no duplicate.
+          required: true
+        - label: I removed all API keys, tokens, and sensitive identifiers from the output above.
+          required: true

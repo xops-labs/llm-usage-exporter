@@ -1,0 +1,55 @@
+version: 2
+updates:
+  # NuGet packages for the .NET solution
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      time: "09:00"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 5
+    labels:
+      - "chore"
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    groups:
+      microsoft:
+        patterns:
+          - "Microsoft.*"
+          - "System.*"
+      prometheus:
+        patterns:
+          - "prometheus-net*"
+      test-tooling:
+        patterns:
+          - "xunit*"
+          - "Microsoft.NET.Test.*"
+          - "coverlet.*"
+          - "FluentAssertions"
+          - "Moq"
+
+  # GitHub Actions workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    labels:
+      - "chore"
+      - "ci"
+    commit-message:
+      prefix: "chore(ci)"
+
+  # Dockerfile base images
+  - package-ecosystem: "docker"
+    directory: "/src/LlmUsageExporter.Api"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    labels:
+      - "chore"
+      - "docker"
+    commit-message:
+      prefix: "chore(docker)"

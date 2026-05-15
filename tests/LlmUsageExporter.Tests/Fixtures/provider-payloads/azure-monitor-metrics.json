@@ -1,0 +1,46 @@
+{
+  "value": [
+    {
+      "name": { "value": "ProcessedPromptTokens", "localizedValue": "Processed Prompt Tokens" },
+      "unit": "Count",
+      "timeseries": [
+        {
+          "metadatavalues": [
+            { "name": { "value": "ModelDeploymentName" }, "value": "gpt-4o-fixture" }
+          ],
+          "data": [
+            { "timeStamp": "2024-03-09T00:00:00Z", "total": 123 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": { "value": "GeneratedTokens", "localizedValue": "Generated Tokens" },
+      "unit": "Count",
+      "timeseries": [
+        {
+          "metadatavalues": [
+            { "name": { "value": "ModelDeploymentName" }, "value": "gpt-4o-fixture" }
+          ],
+          "data": [
+            { "timeStamp": "2024-03-09T00:00:00Z", "total": 45 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": { "value": "TokenTransaction", "localizedValue": "Token Transactions" },
+      "unit": "Count",
+      "timeseries": [
+        {
+          "metadatavalues": [
+            { "name": { "value": "ModelDeploymentName" }, "value": "gpt-4o-fixture" }
+          ],
+          "data": [
+            { "timeStamp": "2024-03-09T00:00:00Z", "total": 6 }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+# Golden /metrics snapshot — multi-model / multi-bucket scenario.
+# Replays *-multi.json/.xml provider-payload fixtures through the publisher
+# and asserts that each of these substring lines is present in the scrape.
+# Counters absent from this list (e.g. requests_total for Anthropic) are
+# intentionally omitted by the mapper for that provider.
+
+# OpenAI: two projects, two models, two buckets aggregated.
+llm_usage_input_tokens_total{tenant="default",provider="openai",model="gpt-4o-mini-multi",tenancy_id="proj_multi_a"} 275
+llm_usage_output_tokens_total{tenant="default",provider="openai",model="gpt-4o-mini-multi",tenancy_id="proj_multi_a"} 105
+llm_usage_total_tokens_total{tenant="default",provider="openai",model="gpt-4o-mini-multi",tenancy_id="proj_multi_a"} 380
+llm_usage_cached_input_tokens_total{tenant="default",provider="openai",model="gpt-4o-mini-multi",tenancy_id="proj_multi_a"} 40
+llm_usage_requests_total{tenant="default",provider="openai",model="gpt-4o-mini-multi",tenancy_id="proj_multi_a"} 6
+llm_usage_input_tokens_total{tenant="default",provider="openai",model="gpt-4o-multi",tenancy_id="proj_multi_b"} 50
+llm_usage_output_tokens_total{tenant="default",provider="openai",model="gpt-4o-multi",tenancy_id="proj_multi_b"} 20
+llm_usage_total_tokens_total{tenant="default",provider="openai",model="gpt-4o-multi",tenancy_id="proj_multi_b"} 70
+llm_usage_requests_total{tenant="default",provider="openai",model="gpt-4o-multi",tenancy_id="proj_multi_b"} 1
+llm_usage_cost_usd_total{tenant="default",provider="openai",tenancy_id="proj_multi_a"} 3.25
+llm_usage_cost_usd_by_model_total{tenant="default",provider="openai",model="gpt-4o-mini-multi",tenancy_id="proj_multi_a"} 3.25
+llm_usage_cost_usd_total{tenant="default",provider="openai",tenancy_id="proj_multi_b"} 0.75
+llm_usage_cost_usd_by_model_total{tenant="default",provider="openai",model="gpt-4o-multi",tenancy_id="proj_multi_b"} 0.75
+
+# Anthropic: two workspaces, two models, cache-creation tokens roll into input.
+llm_usage_input_tokens_total{tenant="default",provider="anthropic",model="claude-3-5-sonnet-multi",tenancy_id="wrkspc_multi_alpha"} 275
+llm_usage_output_tokens_total{tenant="default",provider="anthropic",model="claude-3-5-sonnet-multi",tenancy_id="wrkspc_multi_alpha"} 120
+llm_usage_total_tokens_total{tenant="default",provider="anthropic",model="claude-3-5-sonnet-multi",tenancy_id="wrkspc_multi_alpha"} 395
+llm_usage_cached_input_tokens_total{tenant="default",provider="anthropic",model="claude-3-5-sonnet-multi",tenancy_id="wrkspc_multi_alpha"} 55
+llm_usage_input_tokens_total{tenant="default",provider="anthropic",model="claude-3-haiku-multi",tenancy_id="wrkspc_multi_beta"} 80
+llm_usage_output_tokens_total{tenant="default",provider="anthropic",model="claude-3-haiku-multi",tenancy_id="wrkspc_multi_beta"} 30
+llm_usage_total_tokens_total{tenant="default",provider="anthropic",model="claude-3-haiku-multi",tenancy_id="wrkspc_multi_beta"} 110
+llm_usage_cost_usd_total{tenant="default",provider="anthropic",tenancy_id="wrkspc_multi_alpha"} 5.4321
+llm_usage_cost_usd_by_model_total{tenant="default",provider="anthropic",model="claude-3-5-sonnet-multi",tenancy_id="wrkspc_multi_alpha"} 5.4321
+llm_usage_cost_usd_total{tenant="default",provider="anthropic",tenancy_id="wrkspc_multi_beta"} 0.85
+llm_usage_cost_usd_by_model_total{tenant="default",provider="anthropic",model="claude-3-haiku-multi",tenancy_id="wrkspc_multi_beta"} 0.85
+
+# Azure OpenAI: one configured account hosting two deployments; costs from two accounts in the RG scope.
+llm_usage_input_tokens_total{tenant="default",provider="azure_openai",model="gpt-4o-multi-a",tenancy_id="subscriptions/sub-multi/resourceGroups/rg-multi/providers/Microsoft.CognitiveServices/accounts/aoai-multi-a"} 250
+llm_usage_output_tokens_total{tenant="default",provider="azure_openai",model="gpt-4o-multi-a",tenancy_id="subscriptions/sub-multi/resourceGroups/rg-multi/providers/Microsoft.CognitiveServices/accounts/aoai-multi-a"} 110
+llm_usage_total_tokens_total{tenant="default",provider="azure_openai",model="gpt-4o-multi-a",tenancy_id="subscriptions/sub-multi/resourceGroups/rg-multi/providers/Microsoft.CognitiveServices/accounts/aoai-multi-a"} 360
+llm_usage_requests_total{tenant="default",provider="azure_openai",model="gpt-4o-multi-a",tenancy_id="subscriptions/sub-multi/resourceGroups/rg-multi/providers/Microsoft.CognitiveServices/accounts/aoai-multi-a"} 12
+llm_usage_input_tokens_total{tenant="default",provider="azure_openai",model="gpt-4o-mini-multi-b",tenancy_id="subscriptions/sub-multi/resourceGroups/rg-multi/providers/Microsoft.CognitiveServices/accounts/aoai-multi-a"} 90
+llm_usage_output_tokens_total{tenant="default",provider="azure_openai",model="gpt-4o-mini-multi-b",tenancy_id="subscriptions/sub-multi/resourceGroups/rg-multi/providers/Microsoft.CognitiveServices/accounts/aoai-multi-a"} 30
+llm_usage_total_tokens_total{tenant="default",provider="azure_openai",model="gpt-4o-mini-multi-b",tenancy_id="subscriptions/sub-multi/resourceGroups/rg-multi/providers/Microsoft.CognitiveServices/accounts/aoai-multi-a"} 120
+llm_usage_requests_total{tenant="default",provider="azure_openai",model="gpt-4o-mini-multi-b",tenancy_id="subscriptions/sub-multi/resourceGroups/rg-multi/providers/Microsoft.CognitiveServices/accounts/aoai-multi-a"} 3
+llm_usage_cost_usd_total{tenant="default",provider="azure_openai",tenancy_id="subscriptions/sub-multi/resourceGroups/rg-multi/providers/Microsoft.CognitiveServices/accounts/aoai-multi-a"} 7.25
+llm_usage_cost_usd_by_model_total{tenant="default",provider="azure_openai",model="aoai-multi-a",tenancy_id="subscriptions/sub-multi/resourceGroups/rg-multi/providers/Microsoft.CognitiveServices/accounts/aoai-multi-a"} 7.25
+llm_usage_cost_usd_total{tenant="default",provider="azure_openai",tenancy_id="subscriptions/sub-multi/resourceGroups/rg-multi/providers/Microsoft.CognitiveServices/accounts/aoai-multi-b"} 1.1
+llm_usage_cost_usd_by_model_total{tenant="default",provider="azure_openai",model="aoai-multi-b",tenancy_id="subscriptions/sub-multi/resourceGroups/rg-multi/providers/Microsoft.CognitiveServices/accounts/aoai-multi-b"} 1.1
+
+# Gemini: two models in one project.
+llm_usage_input_tokens_total{tenant="default",provider="gemini",model="gemini-1.5-pro-multi",tenancy_id="gemini-multi-proj"} 240
+llm_usage_output_tokens_total{tenant="default",provider="gemini",model="gemini-1.5-pro-multi",tenancy_id="gemini-multi-proj"} 160
+llm_usage_total_tokens_total{tenant="default",provider="gemini",model="gemini-1.5-pro-multi",tenancy_id="gemini-multi-proj"} 400
+llm_usage_requests_total{tenant="default",provider="gemini",model="gemini-1.5-pro-multi",tenancy_id="gemini-multi-proj"} 8
+llm_usage_input_tokens_total{tenant="default",provider="gemini",model="gemini-1.5-flash-multi",tenancy_id="gemini-multi-proj"} 60
+llm_usage_output_tokens_total{tenant="default",provider="gemini",model="gemini-1.5-flash-multi",tenancy_id="gemini-multi-proj"} 20
+llm_usage_total_tokens_total{tenant="default",provider="gemini",model="gemini-1.5-flash-multi",tenancy_id="gemini-multi-proj"} 80
+llm_usage_requests_total{tenant="default",provider="gemini",model="gemini-1.5-flash-multi",tenancy_id="gemini-multi-proj"} 2
+llm_usage_cost_usd_total{tenant="default",provider="gemini",tenancy_id="gemini-multi-proj"} 4.75
+llm_usage_cost_usd_by_model_total{tenant="default",provider="gemini",model="gemini-1.5-pro-multi",tenancy_id="gemini-multi-proj"} 4.2
+llm_usage_cost_usd_by_model_total{tenant="default",provider="gemini",model="gemini-1.5-flash-multi",tenancy_id="gemini-multi-proj"} 0.55
+
+# Bedrock: one model across two time buckets aggregated into a counter; two cost groups roll into one model.
+llm_usage_input_tokens_total{tenant="default",provider="bedrock",model="anthropic.claude-3-5-sonnet-multi-v1:0",tenancy_id="us-east-1"} 300
+llm_usage_output_tokens_total{tenant="default",provider="bedrock",model="anthropic.claude-3-5-sonnet-multi-v1:0",tenancy_id="us-east-1"} 180
+llm_usage_total_tokens_total{tenant="default",provider="bedrock",model="anthropic.claude-3-5-sonnet-multi-v1:0",tenancy_id="us-east-1"} 480
+llm_usage_requests_total{tenant="default",provider="bedrock",model="anthropic.claude-3-5-sonnet-multi-v1:0",tenancy_id="us-east-1"} 10
+llm_usage_cost_usd_total{tenant="default",provider="bedrock",tenancy_id="us-east-1"} 5
+llm_usage_cost_usd_by_model_total{tenant="default",provider="bedrock",model="Anthropic",tenancy_id="us-east-1"} 5
