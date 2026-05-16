@@ -124,6 +124,8 @@ If you only changed Markdown, the CI `lint-docs` job at [.github/workflows/ci.ym
 - Prometheus metric naming and label-cardinality review.
 - Security hardening for deployment examples.
 - Documentation and reproducible examples.
+- Adopter stories, startup usage notes, and production lessons that can improve [ADOPTERS.md](ADOPTERS.md),
+  [ROADMAP.md](ROADMAP.md), or the setup docs.
 
 ## Updating One Provider Safely
 
@@ -155,6 +157,9 @@ Checklist for provider API drift PRs:
 3. Fill in [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) completely — every box matters for the reviewer.
 4. Link the issue using a closing keyword such as `Closes #123`.
 5. Call out any blocked validation commands with the exact command and error.
+
+Adopter entries are welcome. If you use `llm-usage-exporter` in a startup, platform team, internal project, or
+open-source project, add a row to [ADOPTERS.md](ADOPTERS.md) with the level of detail you are comfortable sharing.
 
 Larger changes — breaking metric/label changes, new providers, governance or release-process changes — require an issue or discussion **opened ≥72 hours before merge** with the `discussion-needed` label. See [GOVERNANCE.md → Larger changes](GOVERNANCE.md#larger-changes-rfc-lite).
 

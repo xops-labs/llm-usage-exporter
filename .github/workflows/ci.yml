@@ -167,7 +167,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          required=(README.md LICENSE NOTICE AUTHORS.md CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md CHANGELOG.md MAINTAINERS.md SUPPORT.md)
+          required=(
+            README.md
+            LICENSE
+            NOTICE
+            AUTHORS.md
+            ADOPTERS.md
+            CONTRIBUTING.md
+            CODE_OF_CONDUCT.md
+            SECURITY.md
+            CHANGELOG.md
+            MAINTAINERS.md
+            ROADMAP.md
+            SUPPORT.md
+          )
           missing=()
           for f in "${required[@]}"; do
             if [ ! -f "$f" ]; then
