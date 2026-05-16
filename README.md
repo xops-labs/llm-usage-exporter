@@ -225,6 +225,51 @@ Full supply-chain story: [SECURITY.md](SECURITY.md) + [docs/standards.md](docs/s
 
 ---
 
+## Commercial use
+
+`llm-usage-exporter` is licensed under the Apache License 2.0. You may use it in startups, internal platforms,
+commercial products, consulting work, and production environments without asking for permission.
+
+Apache-2.0 allows commercial use, modification, distribution, and private use. If you redistribute the software or a
+modified version, preserve the license, copyright notices, and [NOTICE](NOTICE) file as required by the license.
+
+---
+
+## Data and privacy
+
+`llm-usage-exporter` is an aggregate usage and cost exporter. It does not proxy LLM inference traffic and does not
+collect, store, or export prompt text or model response text.
+
+The exporter polls provider usage, billing, monitoring, and cost APIs, then emits operational telemetry such as token
+counts, request counts, model names, provider identifiers, tenant labels, polling health, budget signals, anomaly
+scores, and USD cost metrics.
+
+The exported metrics and FOCUS records can still be sensitive because they may reveal model usage, project names, tenant
+identifiers, spend patterns, and operational behavior. Protect `/metrics`, `/focus.csv`, `/focus.json`, and `/health`
+behind internal networking, mTLS, service-mesh authorization, or an authenticated reverse proxy.
+
+Provider API keys, tenant bearer tokens, cloud credentials, and OTLP headers must be supplied through environment
+variables or secret managers. Do not commit `.env`, cloud keyfiles, API keys, OTLP headers, or logs containing
+credentials. See [docs/security-secrets.md](docs/security-secrets.md) for production secret handling.
+
+---
+
+## Attribution
+
+Attribution is not required for using `llm-usage-exporter`, but it is appreciated.
+
+If this project helps your startup, team, or platform, you can support it by:
+
+- Starring the repository
+- Mentioning `llm-usage-exporter` in your docs, blog, architecture notes, or internal platform guides
+- Adding your organization, startup, team, or project to [ADOPTERS.md](ADOPTERS.md)
+- Sharing a case study, feedback, dashboard screenshot, or production lesson learned
+- Opening issues, pull requests, documentation improvements, provider integrations, or dashboard enhancements
+
+For redistributed copies or modified versions, keep the Apache-2.0 license, copyright notices, and [NOTICE](NOTICE) file intact.
+
+---
+
 ## Documentation map
 
 | Audience | Document |
@@ -241,6 +286,8 @@ Full supply-chain story: [SECURITY.md](SECURITY.md) + [docs/standards.md](docs/s
 | **Operating in production** | [docs/troubleshooting.md](docs/troubleshooting.md) — symptom-organized runbook |
 | **Prometheus alerts** | [deploy/alerts/README.md](deploy/alerts/README.md) |
 | **OTel Collector wiring** | [deploy/otel-collector/README.md](deploy/otel-collector/README.md) |
+| **Roadmap and future direction** | [ROADMAP.md](ROADMAP.md) |
+| **Public adopters and case studies** | [ADOPTERS.md](ADOPTERS.md) |
 | **General questions** | [docs/faq.md](docs/faq.md) |
 | **Per-version release notes** | [CHANGELOG.md](CHANGELOG.md) |
 | **Contributing workflow** | [CONTRIBUTING.md](CONTRIBUTING.md) + [GOVERNANCE.md](GOVERNANCE.md) + [MAINTAINERS.md](MAINTAINERS.md) |
