@@ -314,7 +314,7 @@ Copyright © 2026 llm-usage-exporter Contributors. See [AUTHORS.md](AUTHORS.md) 
 
 - Contributing workflow: see **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 - Private security disclosure: see **[SECURITY.md](SECURITY.md)**.
-- Maintained by the **[@xops-labs/maintainers](https://github.com/orgs/xops-labs/teams/maintainers)** team. See **[MAINTAINERS.md](MAINTAINERS.md)**.
+- Created and maintained by **[Yasvanth Udayakumar](https://www.linkedin.com/in/yasvanth-udayakumar-55298042/)** with the **[@xops-labs/maintainers](https://github.com/orgs/xops-labs/teams/maintainers)** team. See **[MAINTAINERS.md](MAINTAINERS.md)**.
 
 ---
 
@@ -323,5 +323,7 @@ Copyright © 2026 llm-usage-exporter Contributors. See [AUTHORS.md](AUTHORS.md) 
 **llm-usage-exporter** · Near-real-time LLM cost observability · Apache-2.0 · Built for AI FinOps and LLMOps
 
 *If `llm-usage-exporter` saves you a single budget surprise, please star the repo — it's the cheapest cost signal we ship.*
+
+Created and maintained by [Yasvanth Udayakumar](https://www.linkedin.com/in/yasvanth-udayakumar-55298042/).
 
 </div>

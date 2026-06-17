@@ -12,6 +12,7 @@ For private security disclosures, see [SECURITY.md](SECURITY.md).
 
 | Name | GitHub | Areas |
 | --- | --- | --- |
+| Yasvanth Udayakumar (creator, lead maintainer) | [LinkedIn](https://www.linkedin.com/in/yasvanth-udayakumar-55298042/) | Project direction · exporter core · all five providers · OTLP · Helm · releases |
 | @xops-labs/maintainers | [team page](https://github.com/orgs/xops-labs/teams/maintainers) | Exporter core · all five providers (OpenAI, Azure OpenAI, Anthropic, Gemini, Bedrock) · OTLP + tracing · Helm chart · alerts · FOCUS · multi-tenant · checkpoints · dashboards · releases · supply-chain (SBOM, SLSA, cosign) |
 
 ---
