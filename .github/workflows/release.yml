@@ -247,7 +247,7 @@ jobs:
       packages: write
     # The reusable workflow produces signed in-toto SLSA v1.0 provenance and pushes
     # it to the same registry as a co-located attestation under the image's digest.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
     with:
       image: ghcr.io/${{ github.repository }}
       digest: ${{ needs.docker.outputs.image-digest }}
